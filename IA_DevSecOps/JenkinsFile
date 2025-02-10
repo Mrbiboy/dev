@@ -21,7 +21,7 @@ pipeline {
                 sh '''
                     . $PYTHON_VENV/bin/activate
                     cd IA_DevSecOps
-                    python3 extracion.py
+                    python3 extraction.py
                 '''
             }
         }
