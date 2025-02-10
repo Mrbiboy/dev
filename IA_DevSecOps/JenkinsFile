@@ -40,6 +40,16 @@ pipeline {
                 '''
             }
         }
+        stage('Run extraction files') {
+            steps {
+                echo "🔍 extracion files..."
+                sh '''
+                    . $PYTHON_VENV/bin/activate
+                    cd IA_DevSecOps
+                    python3 extracion.py
+                '''
+            }
+        }
 
         stage('Run Dockerfile Analysis') {
             steps {
