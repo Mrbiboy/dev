@@ -38,7 +38,7 @@ pipeline {
                 echo "🔍 Analyse YAML..."
                 sh '''
                     . $PYTHON_VENV/bin/activate
-                    python3 IA_DevSecOps/analyze_yaml.py
+                    python3 IA_DevSecOps/analyze_k8s.py
                 '''
             }
         }
