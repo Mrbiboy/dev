@@ -24,33 +24,30 @@ pipeline {
             steps {
                 echo "📥 Clonage du dépôt centralisé contenant les scripts..."
                 sh '''
-                    rm -rf dev || true
+                    rm -rf dev
                     git clone https://github.com/Mrbiboy/dev.git dev
                 '''
-
                 echo "📂 Affichage du contenu du dépôt après clonage"
                 sh 'ls -R dev/IA_DevSecOps'
             }
         }
+
         stage('Run Security Scan') {
             steps {
                 echo "🚀 Lancement de l'extraction et de l'analyse..."
                 sh '''
                     . $PYTHON_VENV/bin/activate
                     cd dev/IA_DevSecOps
-                    python3 process_repo.py ${GITHUB_REPO_URL}
+                    python3 process_repo.py
                 '''
             }
         }
-
-
-
 
         stage('Check JSON Reports') {
             steps {
                 echo "📄 Vérification du contenu des fichiers JSON"
                 sh '''
-                    ls -l dev/IA_DevSecOps/*.json || echo "❌ Aucun fichier JSON valide trouvé !"
+                    ls -l dev/IA_DevSecOps/configurations/*.json || echo "❌ Aucun fichier JSON trouvé !"
                 '''
             }
         }
@@ -58,7 +55,7 @@ pipeline {
         stage('Archive Reports') {
             steps {
                 echo "📦 Archivage des rapports JSON..."
-                archiveArtifacts artifacts: 'dev/IA_DevSecOps/*.json', fingerprint: true
+                archiveArtifacts artifacts: 'dev/IA_DevSecOps/configurations/*.json', fingerprint: true
             }
         }
     }
