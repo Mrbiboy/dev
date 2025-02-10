@@ -22,10 +22,10 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "📥 Clonage du dépôt GitHub: ${env.GITHUB_REPO_URL}..."
+                echo "📥 Clonage du dépôt centralisé contenant les scripts..."
                 sh '''
                     rm -rf IA_DevSecOps || true
-                    git clone ${GITHUB_REPO_URL} IA_DevSecOps
+                    git clone https://github.com/Mrbiboy/dev.git IA_DevSecOps
                 '''
 
                 echo "📂 Affichage du contenu du dépôt après clonage"
@@ -33,67 +33,13 @@ pipeline {
             }
         }
 
-        stage('Run Extraction Files') {
+        stage('Run Security Scan') {
             steps {
-                echo "🔍 Extraction des fichiers..."
+                echo "🚀 Lancement de l'extraction et de l'analyse..."
                 sh '''
                     . $PYTHON_VENV/bin/activate
                     cd IA_DevSecOps
-                    python3 extraction.py
-                '''
-            }
-        }
-
-        stage('Verify Configuration Files') {
-            steps {
-                echo "📂 Vérification des fichiers dans configurations/"
-                sh '''
-                    if [ -d "IA_DevSecOps/configurations" ]; then
-                        ls -l IA_DevSecOps/configurations/
-                    else
-                        echo "❌ Le dossier configurations/ n'existe pas !"
-                        exit 1
-                    fi
-                '''
-            }
-        }
-
-        stage('Fix Permissions') {
-            steps {
-                echo "🔑 Correction des permissions"
-                sh 'chmod -R 777 IA_DevSecOps/configurations/'
-            }
-        }
-
-        stage('Run Terraform Analysis') {
-            steps {
-                echo "🔍 Analyse Terraform..."
-                sh '''
-                    . $PYTHON_VENV/bin/activate
-                    cd IA_DevSecOps
-                    python3 analyze_terraform.py
-                '''
-            }
-        }
-
-        stage('Run Dockerfile Analysis') {
-            steps {
-                echo "🔍 Analyse Dockerfile..."
-                sh '''
-                    . $PYTHON_VENV/bin/activate
-                    cd IA_DevSecOps
-                    python3 analyze_dockerfile.py
-                '''
-            }
-        }
-
-        stage('Run YAML Analysis') {
-            steps {
-                echo "🔍 Analyse YAML..."
-                sh '''
-                    . $PYTHON_VENV/bin/activate
-                    cd IA_DevSecOps
-                    python3 analyze_k8s.py
+                    python3 process_repo.py
                 '''
             }
         }
