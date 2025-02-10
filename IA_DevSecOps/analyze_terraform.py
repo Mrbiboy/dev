@@ -4,7 +4,7 @@ import json
 import os
 
 # 📂 Dossier où se trouve le fichier Terraform
-OUTPUT_DIR = "configurations/infra.tf"
+OUTPUT_DIR = "configurations"
 terraform_file = os.path.join(OUTPUT_DIR, "infra.tf")  # 🔹 Lecture depuis le dossier configuré
 
 def load_terraform_config(file_path):
