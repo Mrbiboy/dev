@@ -1,11 +1,10 @@
 import os
 import json
-import re
 from dockerfile_parse import DockerfileParser
 
-# 📂 Dossier contenant le fichier Dockerfile
-OUTPUT_DIR = "configurations"
-dockerfile_path = os.path.join(OUTPUT_DIR, "Dockerfile")  # 🔹 Lecture depuis le dossier configuré
+# 📂 Dossier contenant le fichier Dockerfile extrait
+CONFIG_DIR = "configurations"
+DOCKERFILE_PATH = os.path.join(CONFIG_DIR, "Dockerfile")  # 🔹 Lecture depuis le dossier configuré
 
 def check_compliance(dfp):
     """Vérifie toutes les conformités et non-conformités d'un Dockerfile."""
@@ -14,7 +13,7 @@ def check_compliance(dfp):
         "Non Conforme": []
     }
 
-    # ✅ Vérifier si l'image de base est optimisée
+    # ✅ Vérifier si l'image de base est sécurisée et non latest
     if dfp.baseimage:
         if ":" not in dfp.baseimage or dfp.baseimage.endswith(":latest"):
             compliance["Non Conforme"].append(f"L'image `{dfp.baseimage}` utilise `:latest` ou ne spécifie pas de version.")
@@ -27,15 +26,6 @@ def check_compliance(dfp):
         compliance["Conforme"].append(f"Utilisateur non-root détecté: {user_entries[0]}")
     else:
         compliance["Non Conforme"].append("L'utilisateur root est utilisé.")
-
-    # ✅ Vérifier la présence de labels obligatoires
-    required_labels = {"maintainer", "version", "description"}
-    found_labels = {entry['value'].split("=")[0].strip().lower() for entry in dfp.structure if entry['instruction'] == "LABEL"}
-    missing_labels = required_labels - found_labels
-    if missing_labels:
-        compliance["Non Conforme"].append(f"Labels manquants : {', '.join(missing_labels)}")
-    else:
-        compliance["Conforme"].append("Tous les labels obligatoires sont présents.")
 
     # ✅ Vérifier si les ports sensibles sont exposés
     sensitive_ports = {22, 23, 3389, 1521, 3306, 5432, 8080, 8443, 6379, 9200}
@@ -67,10 +57,8 @@ def check_compliance(dfp):
     else:
         compliance["Non Conforme"].append("Le multi-stage build n'est pas utilisé.")
 
-    # Enregistrer en format JSON
-    with open("DockerFile_vulnerabilities.json", "w", encoding="utf-8") as json_file:
-        json.dump(compliance, json_file, indent=4, ensure_ascii=False)
-    print("✅ Analyse des vulnérabilités terminée ! Les résultats sont enregistrés dans `DockerFile_vulnerabilities.json`.")
+    # 📄 Enregistrer le rapport JSON dans configurations/
+    save_report_json(compliance, "DockerFile_vulnerabilities.json")
 
 def extract_dockerfile_info(dfp):
     """Analyse un Dockerfile et extrait les informations utiles."""
@@ -126,11 +114,18 @@ def extract_dockerfile_info(dfp):
         if entry['instruction'] == "RUN":
             results["Dépendances"].append(entry['value'])
 
-    # 🔹 7. Enregistrer les résultats en JSON
-    with open("dockerfile_infos.json", "w", encoding="utf-8") as json_file:
-        json.dump(results, json_file, indent=4, ensure_ascii=False)
+    # 📄 Enregistrer le rapport JSON dans configurations/
+    save_report_json(results, "dockerfile_infos.json")
 
-    print("✅ Analyse terminée ! Les résultats sont enregistrés dans `dockerfile_infos.json`.")
+def save_report_json(report, filename):
+    """Sauvegarde le rapport JSON dans configurations/."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    filepath = os.path.join(CONFIG_DIR, filename)
+
+    with open(filepath, "w", encoding="utf-8") as json_file:
+        json.dump(report, json_file, indent=4, ensure_ascii=False)
+
+    print(f"📄 Rapport JSON généré : {filepath}")
 
 def analyze_dockerfile(dockerfile_path):
     """Exécute l'analyse du Dockerfile."""
@@ -146,5 +141,5 @@ def analyze_dockerfile(dockerfile_path):
     extract_dockerfile_info(dfp)
     check_compliance(dfp)
 
-# 🟢 Exécuter l'analyse
-analyze_dockerfile(dockerfile_path)
+# 🟢 Exécuter l'analyse du Dockerfile extrait
+analyze_dockerfile(DOCKERFILE_PATH)
