@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        VENV_DIR = "venv"  // Dossier virtuel Python
+        PYTHON_VENV = "/var/jenkins_home/venv"  // ✅ Utilisation de ton venv existant
     }
 
     stages {
@@ -13,22 +13,11 @@ pipeline {
             }
         }
 
-        stage('Setup Environment') {
-            steps {
-                echo "🐍 Installation de Python et des dépendances..."
-                sh '''
-                    python3 -m venv $VENV_DIR
-                    source $VENV_DIR/bin/activate
-                    pip install -r requirements.txt
-                '''
-            }
-        }
-
         stage('Run Terraform Analysis') {
             steps {
                 echo "🔍 Analyse Terraform..."
                 sh '''
-                    source $VENV_DIR/bin/activate
+                    source $PYTHON_VENV/bin/activate
                     python3 IA_DevSecOps/analyze_terraform.py
                 '''
             }
@@ -38,7 +27,7 @@ pipeline {
             steps {
                 echo "🔍 Analyse Dockerfile..."
                 sh '''
-                    source $VENV_DIR/bin/activate
+                    source $PYTHON_VENV/bin/activate
                     python3 IA_DevSecOps/analyze_dockerfile.py
                 '''
             }
@@ -48,7 +37,7 @@ pipeline {
             steps {
                 echo "🔍 Analyse YAML..."
                 sh '''
-                    source $VENV_DIR/bin/activate
+                    source $PYTHON_VENV/bin/activate
                     python3 IA_DevSecOps/analyze_yaml.py
                 '''
             }
@@ -63,10 +52,6 @@ pipeline {
     }
 
     post {
-        always {
-            echo "🧹 Nettoyage de l'environnement..."
-            sh 'rm -rf $VENV_DIR'
-        }
         success {
             echo "✅ Pipeline terminé avec succès !"
         }
