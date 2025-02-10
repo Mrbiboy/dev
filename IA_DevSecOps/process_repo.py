@@ -23,7 +23,11 @@ def run_script(script_name, repo_url=""):
         print(f"❌ Erreur lors de l'exécution de {script_name}: {e}")
 
 def main():
-    repo_url = input("🔗 Entrez le lien du dépôt GitHub à analyser : ").strip()
+    # 🔹 Récupération de l'URL du dépôt (Jenkins ou exécution locale)
+    repo_url = os.getenv("GITHUB_REPO_URL")  # Récupération depuis une variable d'environnement (Jenkins)
+
+    if not repo_url:
+        repo_url = input("🔗 Entrez le lien du dépôt GitHub à analyser : ").strip()
 
     if not repo_url.startswith("https://github.com/"):
         print("❌ URL invalide.")
