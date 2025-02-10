@@ -5,19 +5,38 @@ pipeline {
         PYTHON_VENV = "/var/jenkins_home/venv"
     }
 
+    parameters {
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/Mrbiboy/dev.git', description: '🔗 Entrez l\'URL du dépôt GitHub à analyser')
+    }
+
     stages {
+        stage('User Input') {
+            steps {
+                script {
+                    env.GITHUB_REPO_URL = input(
+                        message: '🔗 Entrez le lien du dépôt GitHub à scanner :',
+                        parameters: [string(defaultValue: 'https://github.com/Mrbiboy/dev.git', description: 'Lien du dépôt GitHub')]
+                    )
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
-                echo "📥 Clonage du dépôt GitHub..."
-                git branch: 'main', url: 'https://github.com/Mrbiboy/dev.git'
+                echo "📥 Clonage du dépôt GitHub: ${env.GITHUB_REPO_URL}..."
+                sh '''
+                    rm -rf IA_DevSecOps || true
+                    git clone ${GITHUB_REPO_URL} IA_DevSecOps
+                '''
 
                 echo "📂 Affichage du contenu du dépôt après clonage"
                 sh 'ls -R IA_DevSecOps'
             }
         }
-        stage('Run extraction files') {
+
+        stage('Run Extraction Files') {
             steps {
-                echo "🔍 extracion files..."
+                echo "🔍 Extraction des fichiers..."
                 sh '''
                     . $PYTHON_VENV/bin/activate
                     cd IA_DevSecOps
@@ -29,7 +48,14 @@ pipeline {
         stage('Verify Configuration Files') {
             steps {
                 echo "📂 Vérification des fichiers dans configurations/"
-                sh 'ls -l IA_DevSecOps/configurations/'
+                sh '''
+                    if [ -d "IA_DevSecOps/configurations" ]; then
+                        ls -l IA_DevSecOps/configurations/
+                    else
+                        echo "❌ Le dossier configurations/ n'existe pas !"
+                        exit 1
+                    fi
+                '''
             }
         }
 
@@ -50,7 +76,6 @@ pipeline {
                 '''
             }
         }
-
 
         stage('Run Dockerfile Analysis') {
             steps {
@@ -78,7 +103,7 @@ pipeline {
             steps {
                 echo "📄 Vérification du contenu des fichiers JSON"
                 sh '''
-                    cat IA_DevSecOps/*.json || echo "❌ Aucun fichier JSON valide trouvé !"
+                    ls -l IA_DevSecOps/*.json || echo "❌ Aucun fichier JSON valide trouvé !"
                 '''
             }
         }
