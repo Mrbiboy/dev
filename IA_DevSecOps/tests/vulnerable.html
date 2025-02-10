@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Site Web Vulnérable</title>
+</head>
+<body>
+    <h1>Test OWASP ZAP</h1>
+    <form action="http://localhost:8080/login" method="GET">
+        Nom d'utilisateur : <input type="text" name="username"><br>
+        Mot de passe : <input type="password" name="password"><br>
+        <input type="submit" value="Se Connecter">
+    </form>
+
+    <!-- ⚠️ Vulnérabilité : XSS -->
+    <script>
+        document.write("<p>Votre session : " + document.cookie + "</p>");
+    </script>
+</body>
+</html>

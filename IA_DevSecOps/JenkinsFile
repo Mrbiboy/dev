@@ -1,0 +1,132 @@
+pipeline {
+    agent {
+        docker {
+            image 'python:3.11-slim'
+            args '--user root'
+        }
+    }
+
+    environment {
+        REPO_NAME = 'IA_DevSecOps'
+        VENV_DIR = "/var/jenkins_home/venv"
+    }
+
+    stages {
+
+        stage('Install Git') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                    set -e
+                    echo "▶ Installing Git..."
+                    apt-get update && apt-get install -y git
+                    git --version
+                    '''
+                }
+            }
+        }
+
+        stage('Clone Repository') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                    set -e
+                    echo "▶ Cloning repository ${REPO_NAME}..."
+                    rm -rf ${REPO_NAME} && git clone https://github.com/YoussefElbadouri/${REPO_NAME}.git
+                    '''
+                }
+            }
+        }
+
+        stage('Check Virtual Environment') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                    set -e
+                    if [ ! -d "${VENV_DIR}" ]; then
+                        echo "❌ Erreur : L'environnement virtuel ${VENV_DIR} n'existe pas !"
+                        exit 1
+                    else
+                        echo "✅ Virtual environment detected: ${VENV_DIR}"
+                    fi
+                    '''
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                    set -e
+                    echo "▶ Activating virtual environment..."
+                    . ${VENV_DIR}/bin/activate
+
+                    if [ -f "${REPO_NAME}/requirements.txt" ]; then
+                        echo "▶ Installing dependencies from requirements.txt..."
+                        pip install --no-cache-dir --upgrade pip setuptools wheel
+                        pip install --no-cache-dir -r ${REPO_NAME}/requirements.txt
+                    else
+                        echo "⚠️ Warning: No requirements.txt found, skipping dependency installation!"
+                    fi
+                    '''
+                }
+            }
+        }
+
+        stage('Execute Python Scripts') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                    set -e
+                    echo "▶ Activating virtual environment..."
+                    . ${VENV_DIR}/bin/activate
+
+                    for script in extraction.py analyze_dockerfile.py analyze_terraform.py analyze_k8s.py; do
+                        if [ -f "${REPO_NAME}/$script" ]; then
+                            echo "▶ Running $script..."
+                            python3 ${REPO_NAME}/$script
+                        else
+                            echo "⚠️ Warning: $script not found!"
+                        fi
+                    done
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                    set -e
+                    echo "▶ Vérification de kubectl..."
+                    if ! command -v kubectl &> /dev/null; then
+                        echo "❌ kubectl n'est pas installé ! Installation en cours..."
+                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                        chmod +x kubectl
+                        mv kubectl /usr/local/bin/
+                    else
+                        echo "✅ kubectl est déjà installé."
+                    fi
+
+                    echo "▶ Déploiement du fichier YAML sur Kubernetes..."
+                    kubectl apply -f ${REPO_NAME}/deployment.yaml
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                sh '''#!/bin/bash
+                set -e
+                echo "▶ Cleaning up workspace..."
+                rm -rf ${REPO_NAME}
+                '''
+            }
+        }
+    }
+}
