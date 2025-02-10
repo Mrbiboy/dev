@@ -8,13 +8,17 @@ ANALYZE_K8S_SCRIPT = "analyze_k8s.py"
 ANALYZE_DOCKERFILE_SCRIPT = "analyze_dockerfile.py"
 ANALYZE_TERRAFORM_SCRIPT = "analyze_terraform.py"
 
-def run_script(script_name):
-    cmd = ["python3", script_name]
+def run_script(script_name, repo_url=""):
+    """ Exécute un script Python et passe l'URL si nécessaire. """
+    cmd = ["python", script_name]
+    if repo_url:
+        cmd.append(repo_url)
+
+    print(f"🚀 Lancement de {script_name} avec la commande : {' '.join(cmd)}")
     try:
-        print(f"🚀 Exécution de {script_name}...")
         result = subprocess.run(cmd, capture_output=True, text=True)
-        print(result.stdout)
-        print(result.stderr)
+        print(f"🔍 Sortie standard ({script_name}):\n{result.stdout}")
+        print(f"⚠️ Erreurs ({script_name}):\n{result.stderr}")
     except Exception as e:
         print(f"❌ Erreur lors de l'exécution de {script_name}: {e}")
 
@@ -33,7 +37,7 @@ def main():
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
     # ✅ Extraction des fichiers du dépôt utilisateur
-    run_script(EXTRACTION_SCRIPT)
+    run_script(EXTRACTION_SCRIPT, repo_url)
 
     # ✅ Vérification des fichiers extraits
     extracted_files = os.listdir(CONFIG_DIR)
