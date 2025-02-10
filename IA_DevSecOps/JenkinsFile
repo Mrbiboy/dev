@@ -32,17 +32,19 @@ pipeline {
                 sh 'ls -R dev/IA_DevSecOps'
             }
         }
-
         stage('Run Security Scan') {
             steps {
                 echo "🚀 Lancement de l'extraction et de l'analyse..."
                 sh '''
                     . $PYTHON_VENV/bin/activate
                     cd dev/IA_DevSecOps
-                    python3 process_repo.py
+                    python3 process_repo.py ${GITHUB_REPO_URL}
                 '''
             }
         }
+
+
+
 
         stage('Check JSON Reports') {
             steps {
