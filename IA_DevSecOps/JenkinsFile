@@ -1,132 +1,77 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.11-slim'
-            args '--user root'
-        }
-    }
+    agent any
 
     environment {
-        REPO_NAME = 'IA_DevSecOps'
-        VENV_DIR = "/var/jenkins_home/venv"
+        VENV_DIR = "venv"  // Dossier virtuel Python
     }
 
     stages {
-
-        stage('Install Git') {
+        stage('Checkout') {
             steps {
-                script {
-                    sh '''#!/bin/bash
-                    set -e
-                    echo "▶ Installing Git..."
-                    apt-get update && apt-get install -y git
-                    git --version
-                    '''
-                }
+                echo "📥 Clonage du dépôt GitHub..."
+                git branch: 'main', url: 'https://github.com/Mrbiboy/dev.git'
             }
         }
 
-        stage('Clone Repository') {
+        stage('Setup Environment') {
             steps {
-                script {
-                    sh '''#!/bin/bash
-                    set -e
-                    echo "▶ Cloning repository ${REPO_NAME}..."
-                    rm -rf ${REPO_NAME} && git clone https://github.com/YoussefElbadouri/${REPO_NAME}.git
-                    '''
-                }
+                echo "🐍 Installation de Python et des dépendances..."
+                sh '''
+                    python3 -m venv $VENV_DIR
+                    source $VENV_DIR/bin/activate
+                    pip install -r requirements.txt
+                '''
             }
         }
 
-        stage('Check Virtual Environment') {
+        stage('Run Terraform Analysis') {
             steps {
-                script {
-                    sh '''#!/bin/bash
-                    set -e
-                    if [ ! -d "${VENV_DIR}" ]; then
-                        echo "❌ Erreur : L'environnement virtuel ${VENV_DIR} n'existe pas !"
-                        exit 1
-                    else
-                        echo "✅ Virtual environment detected: ${VENV_DIR}"
-                    fi
-                    '''
-                }
+                echo "🔍 Analyse Terraform..."
+                sh '''
+                    source $VENV_DIR/bin/activate
+                    python3 IA_DevSecOps/analyze_terraform.py
+                '''
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Run Dockerfile Analysis') {
             steps {
-                script {
-                    sh '''#!/bin/bash
-                    set -e
-                    echo "▶ Activating virtual environment..."
-                    . ${VENV_DIR}/bin/activate
-
-                    if [ -f "${REPO_NAME}/requirements.txt" ]; then
-                        echo "▶ Installing dependencies from requirements.txt..."
-                        pip install --no-cache-dir --upgrade pip setuptools wheel
-                        pip install --no-cache-dir -r ${REPO_NAME}/requirements.txt
-                    else
-                        echo "⚠️ Warning: No requirements.txt found, skipping dependency installation!"
-                    fi
-                    '''
-                }
+                echo "🔍 Analyse Dockerfile..."
+                sh '''
+                    source $VENV_DIR/bin/activate
+                    python3 IA_DevSecOps/analyze_dockerfile.py
+                '''
             }
         }
 
-        stage('Execute Python Scripts') {
+        stage('Run YAML Analysis') {
             steps {
-                script {
-                    sh '''#!/bin/bash
-                    set -e
-                    echo "▶ Activating virtual environment..."
-                    . ${VENV_DIR}/bin/activate
-
-                    for script in extraction.py analyze_dockerfile.py analyze_terraform.py analyze_k8s.py; do
-                        if [ -f "${REPO_NAME}/$script" ]; then
-                            echo "▶ Running $script..."
-                            python3 ${REPO_NAME}/$script
-                        else
-                            echo "⚠️ Warning: $script not found!"
-                        fi
-                    done
-                    '''
-                }
+                echo "🔍 Analyse YAML..."
+                sh '''
+                    source $VENV_DIR/bin/activate
+                    python3 IA_DevSecOps/analyze_yaml.py
+                '''
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Archive Reports') {
             steps {
-                script {
-                    sh '''#!/bin/bash
-                    set -e
-                    echo "▶ Vérification de kubectl..."
-                    if ! command -v kubectl &> /dev/null; then
-                        echo "❌ kubectl n'est pas installé ! Installation en cours..."
-                        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                        chmod +x kubectl
-                        mv kubectl /usr/local/bin/
-                    else
-                        echo "✅ kubectl est déjà installé."
-                    fi
-
-                    echo "▶ Déploiement du fichier YAML sur Kubernetes..."
-                    kubectl apply -f ${REPO_NAME}/deployment.yaml
-                    '''
-                }
+                echo "📦 Archivage des rapports JSON..."
+                archiveArtifacts artifacts: '**/*.json', fingerprint: true
             }
         }
     }
 
     post {
         always {
-            script {
-                sh '''#!/bin/bash
-                set -e
-                echo "▶ Cleaning up workspace..."
-                rm -rf ${REPO_NAME}
-                '''
-            }
+            echo "🧹 Nettoyage de l'environnement..."
+            sh 'rm -rf $VENV_DIR'
+        }
+        success {
+            echo "✅ Pipeline terminé avec succès !"
+        }
+        failure {
+            echo "❌ Erreur dans le pipeline. Vérifiez les logs."
         }
     }
 }
