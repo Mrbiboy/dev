@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PYTHON_VENV = "/var/jenkins_home/venv"  // ✅ Utilisation de ton venv existant
+        PYTHON_VENV = "/var/jenkins_home/venv"  // ✅ Utilisation du venv existant
     }
 
     stages {
@@ -10,6 +10,25 @@ pipeline {
             steps {
                 echo "📥 Clonage du dépôt GitHub..."
                 git branch: 'main', url: 'https://github.com/Mrbiboy/dev.git'
+
+                echo "📂 Affichage du contenu du dépôt après clonage"
+                sh 'ls -R IA_DevSecOps'
+            }
+        }
+
+        stage('Verify Configuration Files') {
+            steps {
+                echo "📂 Vérification des fichiers dans configurations/"
+                sh '''
+                    ls -l IA_DevSecOps/configurations/
+                '''
+            }
+        }
+
+        stage('Fix Permissions') {
+            steps {
+                echo "🔑 Correction des permissions"
+                sh 'chmod -R 777 IA_DevSecOps/configurations/'
             }
         }
 
@@ -39,6 +58,15 @@ pipeline {
                 sh '''
                     . $PYTHON_VENV/bin/activate
                     python3 IA_DevSecOps/analyze_k8s.py
+                '''
+            }
+        }
+
+        stage('Check JSON Reports') {
+            steps {
+                echo "📄 Vérification du contenu des fichiers JSON"
+                sh '''
+                    cat IA_DevSecOps/*.json || echo "❌ Aucun fichier JSON valide trouvé !"
                 '''
             }
         }
