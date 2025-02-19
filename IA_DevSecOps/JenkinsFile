@@ -4,18 +4,17 @@ pipeline {
     environment {
         PYTHON_VENV = "/var/jenkins_home/venv"
     }
+    parameters {
+        string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/Mrbiboy/dev.git', description: 'Lien du dépôt GitHub')
+    }
+
 
     stages {
-        stage('User Input') {
+
+        stage('Initialize') {
             steps {
                 script {
-                    env.GITHUB_REPO_URL = input(
-                        message: '🔗 Entrez le lien du dépôt GitHub à scanner :',
-                        ok: 'Lancer le Scan',
-                        parameters: [
-                            string(name: 'GITHUB_REPO_URL', defaultValue: 'https://github.com/Mrbiboy/dev.git', description: 'Lien du dépôt GitHub')
-                        ]
-                    )
+                    env.GITHUB_REPO_URL = params.GITHUB_REPO_URL
                 }
             }
         }
