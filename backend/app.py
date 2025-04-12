@@ -68,6 +68,7 @@ def correct_dockerfile():
 
     return jsonify({"correction": formatted_correction}), 200
 
+
 # Connexion à PostgreSQL
 def get_db_connection():
     try:
@@ -97,8 +98,22 @@ def register():
     data = request.get_json()
     name, email, password = data.get("name"), data.get("email"), data.get("password")
 
+    # ✅ Vérifier que tous les champs sont présents
     if not name or not email or not password:
         return jsonify({"error": "Tous les champs sont obligatoires"}), 400
+
+    # ✅ Validation email
+    import re
+    email_regex = r"[^@]+@[^@]+\.[^@]+"
+    if not re.match(email_regex, email):
+        return jsonify({"error": "Adresse email invalide"}), 400
+
+    # ✅ Vérification mot de passe : minimum 6 caractères
+    if len(password) < 5:
+        return jsonify({"error": "Le mot de passe doit contenir au moins 5 caractères"}), 400
+
+    # (Optionnel) Nettoyage du nom pour éviter XSS
+    name = name.strip()
 
     hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
 
@@ -108,23 +123,69 @@ def register():
 
     try:
         with conn.cursor() as cur:
-            cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id",
-                        (name, email, hashed_password))
+            # ✅ Vérifie si l’email existe déjà
+            cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+            if cur.fetchone():
+                return jsonify({"error": "Un compte avec cet email existe déjà"}), 409
+
+            # ✅ Insertion
+            cur.execute(
+                "INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id",
+                (name, email, hashed_password)
+            )
             user_id = cur.fetchone()[0]
             conn.commit()
             return jsonify({"message": "Inscription réussie", "user_id": user_id}), 201
+
     except psycopg2.Error as e:
         print("❌ Erreur lors de l'inscription :", e)
         return jsonify({"error": "Erreur lors de l'inscription"}), 500
+
     finally:
         conn.close()
 
 # Route pour la connexion
+from datetime import datetime, timedelta
+from flask import request, jsonify
+from flask_jwt_extended import create_access_token, create_refresh_token
+
+# Dictionnaire en mémoire pour stocker les tentatives de connexion
+login_attempts = {}
+MAX_ATTEMPTS = 5
+BLOCK_DURATION = timedelta(minutes=4)
+
 @app.route("/login", methods=["POST"])
 def login():
+    ip = request.remote_addr
+    now = datetime.utcnow()
+
+    # Initialiser si cette IP est inconnue
+    if ip not in login_attempts:
+        login_attempts[ip] = {"count": 0, "last_attempt": now, "blocked_until": None}
+
+    attempt = login_attempts[ip]
+
+    # Vérifier si l'IP est actuellement bloquée
+    if attempt["blocked_until"] and now < attempt["blocked_until"]:
+        return jsonify({"error": "Trop de tentatives échouées. Réessayez dans quelques minutes."}), 429
+
+    # 📥 Récupération des données
     data = request.get_json()
     email, password = data.get("email"), data.get("password")
 
+    # ✅ Validation des champs email et password
+    if not email or not password:
+        return jsonify({"error": "Email et mot de passe sont requis."}), 400
+
+    import re
+    email_regex = r"[^@]+@[^@]+\.[^@]+"
+    if not re.match(email_regex, email):
+        return jsonify({"error": "Adresse email invalide."}), 400
+
+    if len(password) < 5:
+        return jsonify({"error": "Le mot de passe doit contenir au moins 6 caractères."}), 400
+
+    # 🔌 Connexion à la base de données
     conn = get_db_connection()
     if not conn:
         return jsonify({"error": "Erreur de connexion à la base de données"}), 500
@@ -134,9 +195,14 @@ def login():
             cur.execute("SELECT id, name, email, password FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
 
+            # Vérifier les identifiants
             if user and bcrypt.check_password_hash(user[3], password):
+                # Réinitialiser les tentatives après une connexion réussie
+                login_attempts[ip] = {"count": 0, "last_attempt": None, "blocked_until": None}
+
                 access_token = create_access_token(identity=str(user[0]))
                 refresh_token = create_refresh_token(identity=str(user[0]))
+
                 return jsonify({
                     "message": "Connexion réussie",
                     "access_token": access_token,
@@ -144,12 +210,23 @@ def login():
                     "user": {"id": user[0], "name": user[1], "email": user[2]}
                 })
             else:
+                # Incrémenter les tentatives en cas d'échec
+                attempt["count"] += 1
+                attempt["last_attempt"] = now
+
+                if attempt["count"] >= MAX_ATTEMPTS:
+                    attempt["blocked_until"] = now + BLOCK_DURATION
+                    return jsonify({"error": "Trop de tentatives. Compte bloqué temporairement."}), 429
+
                 return jsonify({"error": "Identifiants incorrects"}), 401
+
     except psycopg2.Error as e:
         print("❌ Erreur lors de la connexion :", e)
-        return jsonify({"error": "Erreur lors de la connexion"}), 500
+        return jsonify({"error": "Erreur interne"}), 500
+
     finally:
         conn.close()
+
 
 # Route pour rafraîchir le token JWT
 @app.route("/refresh", methods=["POST"])
