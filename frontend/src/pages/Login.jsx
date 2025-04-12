@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Eye, EyeOff } from "lucide-react"; 
 
 const Login = ({ setIsAuthenticated, setUser }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
@@ -25,10 +27,9 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       if (response.ok) {
         console.log("✅ Login success:", data);
 
-        // Stocker les tokens et les informations utilisateur
         localStorage.setItem("token", data.access_token);
-        localStorage.setItem("refresh_token", data.refresh_token); // Ajout du refresh_token
-        localStorage.setItem("token_expiration", Date.now() + 3600000); // 1 heure
+        localStorage.setItem("refresh_token", data.refresh_token);
+        localStorage.setItem("token_expiration", Date.now() + 3600000);
         localStorage.setItem("user", JSON.stringify(data.user));
 
         setIsAuthenticated(true);
@@ -40,7 +41,6 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           theme: "dark",
         });
 
-        console.log("🔄 Redirection vers le Dashboard...");
         navigate("/dashboard");
       } else {
         toast.error(data.error || "Échec de la connexion", {
@@ -78,20 +78,30 @@ const Login = ({ setIsAuthenticated, setUser }) => {
               required
             />
           </div>
-          <div className="mb-6">
+
+          <div className="mb-6 relative">
             <label htmlFor="password" className="block text-gray-300 mb-1">
               Mot de passe
             </label>
             <input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
+              className="w-full p-2 pr-10 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
               placeholder="Entrez votre mot de passe"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-9 text-gray-400 hover:text-white"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
           </div>
+
           <button
             type="submit"
             disabled={loading}
