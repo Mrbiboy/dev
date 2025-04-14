@@ -7,7 +7,7 @@ import { loadSlim } from "tsparticles-slim";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Dashboard from "./components/Dashboard";
-import Login from "./pages/Login";
+import Login from "./pages/Login"; // Assuming Login.jsx is in pages/
 import Register from "./pages/Register";
 import Policies from "./pages/Policies";
 import Alerts from "./pages/Alerts";
@@ -121,7 +121,7 @@ function App() {
               isAuthenticated={isAuthenticated}
               handleLogout={handleLogout}
               isCollapsed={isSidebarCollapsed}
-              toggleSidebar={toggleSidebar} // Passer la fonction toggle
+              toggleSidebar={toggleSidebar}
             />
           )}
           <div className="flex flex-col flex-1">
@@ -145,6 +145,10 @@ function App() {
                 <Route
                   path="/login"
                   element={!isAuthenticated ? <Login setIsAuthenticated={setIsAuthenticated} setUser={setUser} /> : <Navigate to="/dashboard" />}
+                />
+                <Route
+                  path="/auth/google/callback"
+                  element={<Login setIsAuthenticated={setIsAuthenticated} setUser={setUser} />}
                 />
                 <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" />} />
                 <Route path="/pricing" element={<Pricing />} />
