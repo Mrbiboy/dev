@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, url_for, redirect
+from flask import Flask, request, jsonify, url_for, redirect,Blueprint
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
@@ -7,8 +7,8 @@ from flask_jwt_extended import (
 import psycopg2
 import os
 from dotenv import load_dotenv
-# from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-# import torch
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+import torch
 import tempfile
 import subprocess
 import json
@@ -17,6 +17,7 @@ from google.oauth2 import id_token
 from google.auth.transport.requests import Request
 from datetime import datetime, timedelta, timezone
 import re
+from checkov import checkov_bp
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -45,44 +46,44 @@ if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
 
 # OAuth 2.0 Flow configuration
 SCOPES = ["openid", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
-
+app.register_blueprint(checkov_bp , url_prefix ="/api")
 # # Charger le modèle fine-tuné pour la correction de Dockerfile
-# MODEL_PATH = "./model"  # chemin relatif dans ton projet
-# tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-# model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_PATH)
+MODEL_PATH = "./model"  # chemin relatif dans ton projet
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_PATH)
 
-# @app.route("/correct-dockerfile", methods=["POST"])
-# @jwt_required()
-# def correct_dockerfile():
-#     data = request.get_json()
-#     dockerfile = data.get("dockerfile", "")
-#
-#     if not dockerfile.strip():
-#         return jsonify({"error": "Le champ 'dockerfile' est requis"}), 400
-#
-#
-#
-#     # Prompt optimisé
-#     prompt = (
-#         "Corrige ce Dockerfile pour qu'il soit valide et conforme aux bonnes pratiques. "
-#         "Retourne uniquement le Dockerfile corrigé, avec une instruction par ligne, sans texte explicatif ni paragraphe. "
-#         "Assure-toi que chaque instruction (comme FROM, RUN, COPY, etc.) est sur une ligne séparée et respecte la syntaxe correcte d'un Dockerfile. "
-#         "Voici le Dockerfile à corriger :\n\n"
-#         f"{dockerfile}"
-#     )
-#
-#     # Tokenisation et génération
-#     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
-#
-#     with torch.no_grad():
-#         outputs = model.generate(**inputs, max_length=256)
-#         correction = tokenizer.decode(outputs[0], skip_special_tokens=True)
-#
-#     # Post-traitement pour s'assurer que l'output est bien formaté
-#     lines = correction.splitlines()
-#     formatted_correction = "\n".join(line.strip() for line in lines if line.strip())
-#
-#     return jsonify({"correction": formatted_correction}), 200
+@app.route("/correct-dockerfile", methods=["POST"])
+@jwt_required()
+def correct_dockerfile():
+    data = request.get_json()
+    dockerfile = data.get("dockerfile", "")
+
+    if not dockerfile.strip():
+        return jsonify({"error": "Le champ 'dockerfile' est requis"}), 400
+
+
+
+    # Prompt optimisé
+    prompt = (
+        "Corrige ce Dockerfile pour qu'il soit valide et conforme aux bonnes pratiques. "
+        "Retourne uniquement le Dockerfile corrigé, avec une instruction par ligne, sans texte explicatif ni paragraphe. "
+        "Assure-toi que chaque instruction (comme FROM, RUN, COPY, etc.) est sur une ligne séparée et respecte la syntaxe correcte d'un Dockerfile. "
+        "Voici le Dockerfile à corriger :\n\n"
+        f"{dockerfile}"
+    )
+
+    # Tokenisation et génération
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
+
+    with torch.no_grad():
+        outputs = model.generate(**inputs, max_length=256)
+        correction = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    # Post-traitement pour s'assurer que l'output est bien formaté
+    lines = correction.splitlines()
+    formatted_correction = "\n".join(line.strip() for line in lines if line.strip())
+
+    return jsonify({"correction": formatted_correction}), 200
 
 # Connexion à PostgreSQL
 def get_db_connection():
@@ -200,7 +201,7 @@ def login():
 
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name, email, password FROM users_test WHERE email = %s", (email,))
+            cur.execute("SELECT id, name, email, password FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
             print(user)
 
