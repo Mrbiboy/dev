@@ -17,6 +17,7 @@ from google.oauth2 import id_token
 from google.auth.transport.requests import Request
 from datetime import datetime, timedelta, timezone
 import re
+import requests
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -39,6 +40,8 @@ jwt = JWTManager(app)
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = "http://localhost:5000/auth/google/callback"  # Must match Google Console
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 
 if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
     raise RuntimeError("Erreur : GOOGLE_CLIENT_ID ou GOOGLE_CLIENT_SECRET n'est pas défini dans le fichier .env")
@@ -233,6 +236,245 @@ def login():
         print("❌ Erreur lors de la connexion :", e)
         return jsonify({"error": "Erreur interne"}), 500
 
+    finally:
+        conn.close()
+
+@app.route("/auth/github")
+def github_login():
+    # Redirect to GitHub authorization page
+    github_auth_url = (
+        f"https://github.com/login/oauth/authorize"
+        f"?client_id={GITHUB_CLIENT_ID}"
+        f"&scope=repo user:email"  # Request repo and email access
+        f"&redirect_uri=http://localhost:5000/auth/github/callback"
+    )
+    return redirect(github_auth_url)
+
+@app.route("/auth/github/callback")
+def github_callback():
+    try:
+        code = request.args.get("code")
+        if not code:
+            return jsonify({"error": "Code d'autorisation manquant"}), 400
+
+        # Exchange code for access token
+        token_url = "https://github.com/login/oauth/access_token"
+        payload = {
+            "client_id": GITHUB_CLIENT_ID,
+            "client_secret": GITHUB_CLIENT_SECRET,
+            "code": code
+        }
+        headers = {"Accept": "application/json"}
+        response = requests.post(token_url, json=payload, headers=headers)
+        token_data = response.json()
+
+        if "error" in token_data:
+            return jsonify({"error": "Échec de l'échange de code"}), 400
+
+        access_token = token_data["access_token"]
+
+        # Get user info
+        user_response = requests.get(
+            "https://api.github.com/user",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        user_data = user_response.json()
+
+        email_response = requests.get(
+            "https://api.github.com/user/emails",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        emails = email_response.json()
+        email = next((e["email"] for e in emails if e["primary"] and e["verified"]), None)
+
+        if not email:
+            return jsonify({"error": "Email non vérifié"}), 400
+
+        name = user_data.get("name", user_data.get("login", "GitHub User"))
+        github_id = str(user_data["id"])
+
+        # Database operations
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"error": "Erreur connexion DB"}), 500
+
+        try:
+            with conn.cursor() as cur:
+                # Check if user exists in users_test
+                cur.execute(
+                    "SELECT id, name, email, password FROM users_test WHERE email = %s",
+                    (email,)
+                )
+                user = cur.fetchone()
+
+                if user:
+                    user_id = user[0]
+                    needs_password = user[3] is None
+                else:
+                    # Insert into users_test
+                    cur.execute(
+                        "INSERT INTO users_test (name, email, created_at) VALUES (%s, %s, CURRENT_TIMESTAMP) RETURNING id",
+                        (name, email)
+                    )
+                    user_id = cur.fetchone()[0]
+                    needs_password = True
+
+                # Check if github_id exists in github_users
+                cur.execute(
+                    "SELECT user_id FROM github_users WHERE github_id = %s",
+                    (github_id,)
+                )
+                github_user = cur.fetchone()
+
+                if not github_user:
+                    # Insert into github_users
+                    cur.execute(
+                        "INSERT INTO github_users (user_id, github_id, access_token, created_at) "
+                        "VALUES (%s, %s, %s, CURRENT_TIMESTAMP)",
+                        (user_id, github_id, access_token)
+                    )
+
+                conn.commit()
+
+                # Generate JWT tokens
+                jwt_access_token = create_access_token(identity=str(user_id))
+                jwt_refresh_token = create_refresh_token(identity=str(user_id))
+
+                # Redirect to frontend
+                frontend_url = (
+                    f"http://localhost:3000/auth/github/callback"
+                    f"?access_token={jwt_access_token}"
+                    f"&refresh_token={jwt_refresh_token}"
+                    f"&user_id={user_id}"
+                    f"&name={name}"
+                    f"&email={email}"
+                    f"&needs_password={str(needs_password).lower()}"
+                )
+                return redirect(frontend_url)
+
+        except psycopg2.Error as e:
+            print("❌ Erreur PostgreSQL:", e)
+            conn.rollback()
+            return jsonify({"error": "Erreur base de données"}), 500
+        finally:
+            conn.close()
+
+    except Exception as e:
+        print("❌ Erreur GitHub OAuth:", e)
+        return jsonify({"error": "Erreur d'authentification"}), 500
+    
+
+@app.route("/github/repos", methods=["GET"])
+@jwt_required()
+def get_github_repos():
+    user_id = get_jwt_identity()
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Erreur connexion DB"}), 500
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT access_token FROM github_users WHERE user_id = %s",
+                (user_id,)
+            )
+            result = cur.fetchone()
+            if not result:
+                return jsonify({"error": "Compte GitHub non lié"}), 404
+            access_token = result[0]
+
+        # Fetch repos from GitHub
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get("https://api.github.com/user/repos", headers=headers)
+        if response.status_code != 200:
+            return jsonify({"error": "Échec récupération dépôts"}), 400
+
+        repos = response.json()
+        repo_data = [
+            {
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+                "description": repo.get("description", ""),
+                "html_url": repo["html_url"],
+                "has_dependabot": False  # Placeholder for security check
+            }
+            for repo in repos
+        ]
+        return jsonify(repo_data)
+
+    except psycopg2.Error as e:
+        print("❌ Erreur PostgreSQL:", e)
+        return jsonify({"error": "Erreur base de données"}), 500
+    finally:
+        conn.close()
+
+@app.route("/github/validate-token", methods=["POST"])
+@jwt_required()
+def validate_github_token():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    token = data.get("token")
+    selected_repos = data.get("selected_repos", [])
+
+    if not token:
+        return jsonify({"error": "Jeton requis"}), 400
+
+    # Validate token
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get("https://api.github.com/user", headers=headers)
+    if response.status_code != 200:
+        return jsonify({"error": "Jeton invalide"}), 400
+
+    user_data = response.json()
+    github_id = str(user_data["id"])
+
+    # Fetch repos to confirm access
+    repos_response = requests.get("https://api.github.com/user/repos", headers=headers)
+    if repos_response.status_code != 200:
+        return jsonify({"error": "Échec récupération dépôts"}), 400
+    repos = repos_response.json()
+
+    # Filter selected repos (if provided)
+    repo_data = [
+        {
+            "name": repo["name"],
+            "full_name": repo["full_name"],
+            "description": repo.get("description", ""),
+            "html_url": repo["html_url"]
+        }
+        for repo in repos
+        if not selected_repos or repo["full_name"] in selected_repos
+    ]
+
+    # Store token in github_users
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"error": "Erreur connexion DB"}), 500
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT user_id FROM github_users WHERE user_id = %s",
+                (user_id,)
+            )
+            exists = cur.fetchone()
+            if exists:
+                cur.execute(
+                    "UPDATE github_users SET access_token = %s, github_id = %s WHERE user_id = %s",
+                    (token, github_id, user_id)
+                )
+            else:
+                cur.execute(
+                    "INSERT INTO github_users (user_id, github_id, access_token, created_at) "
+                    "VALUES (%s, %s, %s, CURRENT_TIMESTAMP)",
+                    (user_id, github_id, token)
+                )
+            conn.commit()
+        return jsonify({"message": "Jeton validé", "repos": repo_data})
+    except psycopg2.Error as e:
+        print("❌ Erreur PostgreSQL:", e)
+        conn.rollback()
+        return jsonify({"error": "Erreur base de données"}), 500
     finally:
         conn.close()
 
