@@ -1,11 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { DocumentTextIcon, SparklesIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { useLocation } from "react-router-dom";
 
 const PoliciesGenerator = () => {
+  const location = useLocation();
+  const selectedFiles = location.state?.selectedFiles || "";
   const [dockerfileInput, setDockerfileInput] = useState("");
   const [correctedDockerfile, setCorrectedDockerfile] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Populate textarea if files are passed
+  useEffect(() => {
+    if (selectedFiles.length > 0) {
+      const firstFile = selectedFiles[0];
+      setDockerfileInput(firstFile.content);
+    }
+  }, [selectedFiles]);
 
   const correctDockerfile = async () => {
     setIsLoading(true);

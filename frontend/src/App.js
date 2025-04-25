@@ -16,6 +16,7 @@ import VulnerabilityScanner from "./pages/VulnerabilityScanner";
 import ComplianceChecker from "./pages/ComplianceChecker";
 import RiskDashboard from "./pages/RiskDashboard";
 import Pricing from "./pages/Pricing";
+import Configs from "./pages/Configs";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -141,6 +142,7 @@ function App() {
                 <Route path="/generate-policy" element={isAuthenticated ? <PoliciesGenerator /> : <Navigate to="/login" />} />
                 <Route path="/scan" element={isAuthenticated ? <VulnerabilityScanner /> : <Navigate to="/login" />} />
                 <Route path="/compliance" element={isAuthenticated ? <ComplianceChecker /> : <Navigate to="/login" />} />
+                <Route path="/configs" element={isAuthenticated ? <Configs /> : <Navigate to="/login" />} />
                 <Route path="/risks" element={isAuthenticated ? <RiskDashboard /> : <Navigate to="/login" />} />
                 <Route
                   path="/login"
@@ -148,6 +150,10 @@ function App() {
                 />
                 <Route
                   path="/auth/google/callback"
+                  element={<Login setIsAuthenticated={setIsAuthenticated} setUser={setUser} />}
+                />
+                <Route
+                  path="/auth/github/callback"
                   element={<Login setIsAuthenticated={setIsAuthenticated} setUser={setUser} />}
                 />
                 <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" />} />
