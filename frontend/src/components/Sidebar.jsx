@@ -10,6 +10,7 @@ import {
   ArrowRightStartOnRectangleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
 const Sidebar = ({ handleLogout, isCollapsed, toggleSidebar }) => {
@@ -53,6 +54,16 @@ const Sidebar = ({ handleLogout, isCollapsed, toggleSidebar }) => {
         >
           <HomeIcon className="h-5 w-5 text-blue-400" />
           {!isCollapsed && <span className="ml-3">Dashboard</span>}
+        </Link>
+        <Link
+          to="/configs"
+          className={`flex items-center p-2 rounded hover:bg-gray-700 transition-colors duration-200 ${
+            isCollapsed ? "justify-center" : ""
+          }`}
+          aria-label="Configurations"
+        >
+          <DocumentTextIcon className="h-5 w-5 text-blue-400" />
+          {!isCollapsed && <span className="ml-3">Fichiers de Configurations</span>}
         </Link>
         <Link
           to="/generate-policy"

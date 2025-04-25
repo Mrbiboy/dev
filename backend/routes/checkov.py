@@ -5,7 +5,7 @@ import zipfile
 import subprocess
 import shutil
 import stat
-from checkov_handler import run_checkov_on_dir
+from handlers.checkov_handler import run_checkov_on_dir
 
 app = Flask(__name__)
 
@@ -83,6 +83,7 @@ def validate():
             return jsonify({"error": "Aucun fichier scannable trouvé dans l’archive."}), 400
 
         result = run_checkov_on_dir(temp_dir, is_file=False)
+
         return jsonify(result)
 
     # --- Repo GitHub ---

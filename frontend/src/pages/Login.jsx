@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Eye, EyeOff } from "lucide-react";
-import SetPassword from "./SetPassword"; // Adjust path as needed
+import SetPassword from "./SetPassword"; // Adjust path
 
 const Login = ({ setIsAuthenticated, setUser }) => {
   const navigate = useNavigate();
@@ -12,11 +12,11 @@ const Login = ({ setIsAuthenticated, setUser }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [needsPassword, setNeedsPassword] = useState(false);
-  const [googleUser, setGoogleUser] = useState(null);
+  const [authUser, setAuthUser] = useState(null);
 
-  // Handle Google OAuth callback
+  // Handle OAuth callbacks (Google and GitHub)
   useEffect(() => {
-    if (location.pathname === "/auth/google/callback") {
+    const handleOAuthCallback = () => {
       const params = new URLSearchParams(location.search);
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
@@ -26,7 +26,6 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       const needsPassword = params.get("needs_password") === "true";
 
       if (accessToken && refreshToken && userId && email) {
-        // Store tokens and user info
         localStorage.setItem("token", accessToken);
         localStorage.setItem("refresh_token", refreshToken);
         localStorage.setItem("token_expiration", Date.now() + 3600000);
@@ -34,28 +33,30 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         localStorage.setItem("user", JSON.stringify(user));
 
         if (!needsPassword) {
-          // User has a password, go to dashboard
           setIsAuthenticated(true);
           setUser(user);
-          toast.success("Connexion Google réussie !", {
+          toast.success("Connexion réussie !", {
             position: "top-right",
             autoClose: 3000,
             theme: "dark",
           });
           navigate("/dashboard", { replace: true });
         } else {
-          // User needs to set a password
-          setGoogleUser(user);
+          setAuthUser(user);
           setNeedsPassword(true);
         }
       } else {
-        toast.error("Erreur lors de l'authentification Google", {
+        toast.error("Erreur lors de l'authentification", {
           position: "top-right",
           autoClose: 3000,
           theme: "dark",
         });
         navigate("/login", { replace: true });
       }
+    };
+
+    if (["/auth/google/callback", "/auth/github/callback"].includes(location.pathname)) {
+      handleOAuthCallback();
     }
   }, [location, navigate, setIsAuthenticated, setUser]);
 
@@ -74,8 +75,6 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       setLoading(false);
 
       if (response.ok) {
-        console.log("✅ Login success:", data);
-
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("refresh_token", data.refresh_token);
         localStorage.setItem("token_expiration", Date.now() + 3600000);
@@ -113,9 +112,9 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       const response = await fetch("http://127.0.0.1:5000/auth/google");
       const data = await response.json();
       if (data.authorization_url) {
-        window.location.href = data.authorization_url; // Redirect to Google OAuth
+        window.location.href = data.authorization_url;
       } else {
-        toast.error("Erreur lors de l'initialisation de Google OAuth", {
+        toast.error("Erreur Google OAuth", {
           position: "top-right",
           autoClose: 3000,
           theme: "dark",
@@ -130,18 +129,28 @@ const Login = ({ setIsAuthenticated, setUser }) => {
     }
   };
 
-  // Render password setup form if needed
-  if (needsPassword && googleUser) {
+  const handleGitHubLogin = async () => {
+    try {
+      window.location.href = "http://127.0.0.1:5000/auth/github";
+    } catch (error) {
+      toast.error("Erreur GitHub OAuth", {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "dark",
+      });
+    }
+  };
+
+  if (needsPassword && authUser) {
     return (
       <SetPassword
-        user={googleUser}
+        user={authUser}
         setIsAuthenticated={setIsAuthenticated}
         setUser={setUser}
       />
     );
   }
 
-  // Render login form
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md z-10">
@@ -199,7 +208,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         <div className="mt-4">
           <button
             onClick={handleGoogleLogin}
-            className="w-full bg-white text-gray-800 p-2 rounded-lg font-semibold flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
+            className="w-full bg-white text-gray-800 p-2 rounded-lg font-semibold flex items-center justify-center hover:bg-gray-200 transition-colors duration-200 mb-2"
           >
             <img
               src="https://www.google.com/favicon.ico"
@@ -207,6 +216,15 @@ const Login = ({ setIsAuthenticated, setUser }) => {
               className="w-5 h-5 mr-2"
             />
             Se connecter avec Google
+          </button>
+          <button
+            onClick={handleGitHubLogin}
+            className="w-full bg-gray-900 text-white p-2 rounded-lg font-semibold flex items-center justify-center hover:bg-gray-700 transition-colors duration-200"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.29 1.08 2.85.82.09-.64.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.52.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.66.94.66 1.9v2.81c0 .27.16.59.66.5A10 10 0 0 0 22 12 10 10 0 0 0 12 2z" />
+            </svg>
+            Se connecter avec GitHub
           </button>
         </div>
 
