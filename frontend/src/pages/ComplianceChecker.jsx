@@ -39,6 +39,7 @@ const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
       }
 
       const data = await response.json();
+      console.log("Checkov Result for GitHub Repo: ", data); // Debug log
       setResult(data);
       toast.success("Vérification terminée avec succès !", {
         position: "top-right",
@@ -486,6 +487,7 @@ const ResultDisplay = ({ result }) => {
   };
 
   const renderResults = (results) => {
+    // Handle array of results (legacy support for multi-repo)
     if (Array.isArray(results)) {
       return results.map((item, index) => (
         <div key={index} className="mb-4">
@@ -498,6 +500,16 @@ const ResultDisplay = ({ result }) => {
         </div>
       ));
     }
+    
+    if (results.repo && results.data) {
+      return (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-100">{results.repo}</h3>
+          {renderSingleResult(results.data)}
+        </div>
+      );
+    }
+
     return renderSingleResult(results);
   };
 
@@ -540,7 +552,7 @@ const ResultDisplay = ({ result }) => {
 
     // Handle directory/repo result
     const results = data.results || data;
-    if (!results.status) {
+    if (!results.passed_checks && !results.failed_checks && !results.summary) {
       return <p className="text-gray-400">Aucun résultat disponible.</p>;
     }
 
@@ -549,8 +561,13 @@ const ResultDisplay = ({ result }) => {
         <div className="mb-4">
           <p className="text-green-400">Vérifications réussies : {results.summary?.passed || results.passed_checks?.length || 0}</p>
           <p className="text-red-400">Vérifications échouées : {results.summary?.failed || results.failed_checks?.length || 0}</p>
-          <p className="text-gray-100">Score : {results.score}%</p>
-          <p className="text-gray-100">Conforme : {results.compliant ? "Oui" : "Non"}</p>
+          {results.summary?.resource_count !== undefined && (
+            <p className="text-gray-100">Ressources scannées : {results.summary.resource_count}</p>
+          )}
+          {results.score !== undefined && <p className="text-gray-100">Score : {results.score}%</p>}
+          {results.compliant !== undefined && (
+            <p className="text-gray-100">Conforme : {results.compliant ? "Oui" : "Non"}</p>
+          )}
         </div>
         {results.failed_checks?.length > 0 && (
           <div className="mb-4">
@@ -608,7 +625,6 @@ const ResultDisplay = ({ result }) => {
     </div>
   );
 };
-
 // ComplianceChecker.jsx
 
 
