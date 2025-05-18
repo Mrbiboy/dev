@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
-const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
+const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading, userId }) => {
   const [url, setUrl] = useState("");
 
   const checkCompliance = async () => {
@@ -22,6 +22,7 @@ const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "X-User-ID": userId, // Add user_id
         },
         body: JSON.stringify({ repo_url: url, input_type: "repo" }),
       });
@@ -32,8 +33,7 @@ const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
       }
 
       const data = await response.json();
-      console.log("Checkov Result for GitHub Repo: ", data); // Debug log
-      setResult(data);
+      setResult(data); // Pass raw response
       toast.success("Vérification terminée avec succès !", {
         position: "top-right",
         autoClose: 3000,

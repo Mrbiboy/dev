@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
-const FileComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
+const FileComplianceChecker = ({ setResult, isLoading, setIsLoading, userId }) => {
   const [file, setFile] = useState(null);
 
   const handleFileChange = (e) => {
@@ -29,6 +29,7 @@ const FileComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "X-User-ID": userId,
         },
         body: formData,
       });
@@ -39,7 +40,7 @@ const FileComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
       }
 
       const data = await response.json();
-      setResult(data);
+      setResult(data); // Pass raw response to ResultDisplay
       toast.success("Vérification terminée avec succès !", {
         position: "top-right",
         autoClose: 3000,

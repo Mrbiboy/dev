@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 
-const ResultDisplay = ({ result }) => {
-  if (!result) return null;
+const ResultDisplay = ({ result, item_name}) => {
+  const [activeTab, setActiveTab] = useState("checkov"); // Default tab: Standard Checkov Output
+  console.log(result);
+
+  if (!result) return <p className="text-gray-400">Aucun résultat disponible.</p>;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(result, null, 2)).then(() => {
@@ -43,38 +46,10 @@ const ResultDisplay = ({ result }) => {
   const renderSingleResult = (data) => {
     // Handle single file result
     if (data.file_path) {
-      return (
-        <div>
-          <p className="text-gray-100">Fichier : {data.file_path}</p>
-          <p className="text-green-400">Vérifications réussies : {data.passed_checks?.length || 0}</p>
-          <p className="text-red-400">Vérifications échouées : {data.failed_checks?.length || 0}</p>
-          {data.failed_checks?.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-gray-100 font-semibold">Vérifications échouées :</h4>
-              <ul className="list-disc list-inside text-gray-300">
-                {data.failed_checks.map((check, idx) => (
-                  <li key={idx}>
-                    <span className="text-red-400">{check.check_id}</span> - {check.check_name} (Fichier : {check.file_path}, Ligne : {check.file_line_range?.join("-")})
-                    {check.guideline && <span>, Guideline: {check.guideline}</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {data.passed_checks?.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-gray-100 font-semibold">Vérifications réussies :</h4>
-              <ul className="list-disc list-inside text-gray-300">
-                {data.passed_checks.map((check, idx) => (
-                  <li key={idx}>
-                    <span className="text-green-400">{check.check_id}</span> - {check.check_name} (Fichier : {check.file_path}, Ligne : {check.file_line_range?.join("-")})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      );
+      const groupedChecks = {
+        [data.file_path]: data.failed_checks || [],
+      };
+      return renderGroupedResults({ failed_checks: data.failed_checks, passed_checks: data.passed_checks, files_found: [data.file_path] }, groupedChecks);
     }
 
     // Handle directory/repo result
@@ -83,46 +58,124 @@ const ResultDisplay = ({ result }) => {
       return <p className="text-gray-400">Aucun résultat disponible.</p>;
     }
 
+    // Group failed checks by file_path
+    const groupedChecks = {};
+    (results.failed_checks || []).forEach((check) => {
+      const filePath = check.file_path;
+      if (!groupedChecks[filePath]) {
+        groupedChecks[filePath] = [];
+      }
+      groupedChecks[filePath].push(check);
+    });
+
+    return renderGroupedResults(results, groupedChecks);
+  };
+
+  const renderGroupedResults = (results, groupedChecks) => {
+    // Extract repository name from repo_url
+    const repoUrl = result?.repo_url;
+    const ItemName = (repoUrl != null )? repoUrl.split("/").slice(-2).join("/")
+        : (item_name ? item_name : "Fichier");
+
+
     return (
       <div>
+        {/* Repository Name */}
+        {ItemName !== "Fichier"  && <h3 className="text-lg font-semibold text-gray-100 mb-4">{ItemName}</h3>}
+
+        {/* Summary */}
         <div className="mb-4">
-          <p className="text-green-400">Vérifications réussies : {results.summary?.passed || results.passed_checks?.length || 0}</p>
-          <p className="text-red-400">Vérifications échouées : {results.summary?.failed || results.failed_checks?.length || 0}</p>
-          {results.summary?.resource_count !== undefined && (
-            <p className="text-gray-100">Ressources scannées : {results.summary.resource_count}</p>
-          )}
-          {results.score !== undefined && <p className="text-gray-100">Score : {results.score}%</p>}
           {results.compliant !== undefined && (
             <p className="text-gray-100">Conforme : {results.compliant ? "Oui" : "Non"}</p>
           )}
+          {results.summary?.passed!==0 && <p className="text-green-400">Vérifications réussies : { results.summary?.passed || results.passed_checks?.length }</p>}
+          <p className="text-red-400">Vérifications échouées : {results.summary?.failed || results.failed_checks?.length || 0}</p>
+          {(results.score !== undefined &&  results.score !== 0) && <p className="text-gray-100">Score : {results.score}%</p>}
         </div>
-        {results.failed_checks?.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-gray-100 font-semibold">Vérifications échouées :</h4>
-            <ul className="list-disc list-inside text-gray-300">
-              {results.failed_checks.map((check, idx) => (
-                <li key={idx}>
-                  <span className="text-red-400">{check.check_id}</span> - {check.check_name} (Fichier : {check.file_path}, Ligne : {check.file_line_range?.join("-")})
-                  {check.guideline && <span>, Guideline: {check.guideline}</span>}
-                </li>
-              ))}
-            </ul>
+
+        {/* Tabs */}
+        <div className="mb-4">
+          <div className="flex border-b border-gray-700">
+            <button
+              className={`px-4 py-2 font-semibold ${
+                activeTab === "checkov" ? "border-b-2 border-green-500 text-green-400" : "text-gray-400"
+              }`}
+              onClick={() => setActiveTab("checkov")}
+            >
+              Résultats
+            </button>
+            <button
+              className={`px-4 py-2 font-semibold ${
+                activeTab === "recommendations" ? "border-b-2 border-green-500 text-green-400" : "text-gray-400"
+              }`}
+              onClick={() => setActiveTab("recommendations")}
+            >
+              Recommendations
+            </button>
           </div>
-        )}
-        {results.passed_checks?.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-gray-100 font-semibold">Vérifications réussies :</h4>
-            <ul className="list-disc list-inside text-gray-300">
-              {results.passed_checks.map((check, idx) => (
-                <li key={idx}>
-                  <span className="text-green-400">{check.check_id}</span> - {check.check_name} (Fichier : {check.file_path}, Ligne : {check.file_line_range?.join("-")})
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {results.files_found?.length > 0 && (
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === "checkov" && (
           <div>
+            {results.failed_checks?.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-gray-100 font-semibold">Vérifications échouées :</h4>
+                {Object.entries(groupedChecks).map(([filePath, checks]) => (
+                  <div key={filePath} className="mt-4">
+                    <h5 className="text-red-700 font-medium">----------------{filePath}----------------</h5>
+                    <ul className="list-disc list-inside text-gray-300">
+                      {checks.map((check, idx) => (
+                        <li key={idx}>
+                          <span className="text-red-400">{check.check_id}</span> - {check.check_name} (Ligne : {check.file_line_range?.join("-")})
+                          {check.guideline && <span>, Guideline: <a href={check.guideline} className="text-blue-400" target="_blank" rel="noopener noreferrer">{check.guideline}</a></span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            {results.passed_checks?.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-gray-100 font-semibold">Vérifications réussies :</h4>
+                <ul className="list-disc list-inside text-gray-300">
+                  {results.passed_checks.map((check, idx) => (
+                    <li key={idx}>
+                      <span className="text-green-400">{check.check_id}</span> - {check.check_name} (Fichier : {check.file_path}, Ligne : {check.file_line_range?.join("-")})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "recommendations" && (
+          <div>
+            {results.failed_checks?.length > 0 ? (
+              Object.entries(groupedChecks).map(([filePath, checks]) => (
+                <div key={filePath} className="mt-4">
+                  <h5 className="text-red-700 font-medium">----------------{filePath}----------------</h5>
+                  <ul className="list-disc list-inside text-gray-300">
+                    {checks.map((check, idx) => (
+                      <li key={idx} className="mb-2">
+                        <span className="text-red-400">{check.check_id}</span> - {check.check_name} (Ligne : {check.file_line_range?.join("-")})
+                        <div className="text-slate-400 mt-1">Recommendation: {check.suggestion}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">Aucune recommandation disponible.</p>
+            )}
+          </div>
+        )}
+
+        {/* Scanned Files */}
+        {results.files_found?.length > 0 && (
+          <div className="mt-4">
             <h4 className="text-gray-100 font-semibold">Fichiers scannés :</h4>
             <ul className="list-disc list-inside text-gray-300">
               {results.files_found.map((file, idx) => (
@@ -136,20 +189,22 @@ const ResultDisplay = ({ result }) => {
   };
 
   return (
-    <div className="mt-6 w-full max-w-2xl relative">
-      <label htmlFor="compliance-result" className="text-gray-400 text-sm mb-2 block">
-        Résultat de la vérification :
-      </label>
-      <div className="p-4 bg-gray-950 text-green-300 rounded-lg shadow-inner max-h-96 overflow-y-auto font-mono text-sm">
-        {renderResults(result)}
+      <div className="mt-6 w-full max-w-260 relative h-50">
+        <label htmlFor="compliance-result" className="text-gray-400 text-sm mb-2 block">
+          Résultat de la vérification :
+        </label>
+        <div
+            className="p-4 bg-gray-950 text-green-300 rounded-lg shadow-inner max-h-96 overflow-y-auto font-mono text-sm">
+          {renderResults(result)}
+          <button
+              onClick={handleCopy}
+              className="absolute top-8 right-6 bg-gray-700 text-white px-2 py-1 rounded hover:bg-gray-600"
+          >
+            <DocumentDuplicateIcon className="h-4 w-4"/>
+          </button>
+        </div>
+
       </div>
-      <button
-        onClick={handleCopy}
-        className="absolute top-2 right-2 bg-gray-700 text-white px-2 py-1 rounded hover:bg-gray-600"
-      >
-        <DocumentDuplicateIcon className="h-4 w-4" />
-      </button>
-    </div>
   );
 };
 
