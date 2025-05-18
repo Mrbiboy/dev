@@ -37,7 +37,6 @@ app.register_blueprint(dashboard_bp, url_prefix="/")
 app.register_blueprint(scan_bp, url_prefix="/")
 app.register_blueprint(checkov_bp, url_prefix="/")
 app.register_blueprint(history_bp, url_prefix="/")
-app.register_blueprint(semgrep_bp, url_prefix="/")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
