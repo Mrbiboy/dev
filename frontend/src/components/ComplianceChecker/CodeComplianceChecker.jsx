@@ -2,11 +2,10 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
-const CodeComplianceChecker = ({ setResult, isLoading, setIsLoading, preSelectedFiles = [] }) => {
+const CodeComplianceChecker = ({ setResult, isLoading, setIsLoading, preSelectedFiles = [], userId }) => {
   const [codeInput, setCodeInput] = useState("");
   const [framework, setFramework] = useState("terraform");
 
-  // Populate textarea with the single pre-selected file
   useEffect(() => {
     if (preSelectedFiles.length === 1) {
       const file = preSelectedFiles[0];
@@ -32,8 +31,9 @@ const CodeComplianceChecker = ({ setResult, isLoading, setIsLoading, preSelected
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "X-User-ID": userId, // Add user_id
         },
-        body: JSON.stringify({ content: codeInput, framework }),
+        body: JSON.stringify({ content: codeInput, framework, input_type: "content" }),
       });
 
       if (!response.ok) {
@@ -42,7 +42,7 @@ const CodeComplianceChecker = ({ setResult, isLoading, setIsLoading, preSelected
       }
 
       const data = await response.json();
-      setResult(data);
+      setResult(data); // Pass raw response
       toast.success("Vérification terminée avec succès !", {
         position: "top-right",
         autoClose: 3000,

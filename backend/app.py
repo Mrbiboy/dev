@@ -4,6 +4,9 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
+
+from routes.sempgrep import semgrep_bp
+from routes.History import history_bp
 from routes.user_routes import user_bp
 from routes.github_routes import github_bp
 from routes.google_routes import google_bp
@@ -33,6 +36,8 @@ app.register_blueprint(google_bp, url_prefix="/")
 app.register_blueprint(dashboard_bp, url_prefix="/")
 app.register_blueprint(scan_bp, url_prefix="/")
 app.register_blueprint(checkov_bp, url_prefix="/")
+app.register_blueprint(history_bp, url_prefix="/")
+app.register_blueprint(semgrep_bp, url_prefix="/")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

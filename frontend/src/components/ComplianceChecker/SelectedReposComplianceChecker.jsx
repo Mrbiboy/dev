@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { CheckCircleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
-const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading }) => {
+const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading, userId }) => {
   const [repos, setRepos] = useState([]);
   const [selectedRepo, setSelectedRepo] = useState("");
   const [reposLoading, setReposLoading] = useState(false);
@@ -24,10 +24,10 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading }) 
         }
 
         const data = await response.json();
-        const selectedRepos = data.filter(repo => repo.is_selected);
+        const selectedRepos = data.filter((repo) => repo.is_selected);
         setRepos(selectedRepos);
         if (selectedRepos.length > 0) {
-          setSelectedRepo(selectedRepos[0].full_name); // Auto-select the first repo
+          setSelectedRepo(selectedRepos[0].full_name);
         }
         toast.success("Dépôts sélectionnés chargés !", {
           toastId: "selectionned-repos-loaded",
@@ -62,12 +62,13 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading }) 
 
     setIsLoading(true);
     try {
-      const repoData = repos.find(r => r.full_name === selectedRepo);
+      const repoData = repos.find((r) => r.full_name === selectedRepo);
       const response = await fetch("http://127.0.0.1:5000/checkov", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "X-User-ID": userId, // Add user_id
         },
         body: JSON.stringify({ repo_url: repoData.html_url, input_type: "repo" }),
       });
@@ -78,8 +79,7 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading }) 
       }
 
       const data = await response.json();
-      console.log("Checkov Result for Selected Repo:", { repo: repoData.full_name, data }); // Debug log
-      setResult({ repo: repoData.full_name, data });
+      setResult({ repo: repoData.full_name, data }); // Pass raw response with repo info
       toast.success("Vérification terminée !", {
         position: "top-right",
         autoClose: 3000,

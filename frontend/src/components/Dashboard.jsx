@@ -12,6 +12,28 @@ import {
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
+// Utility function for smooth number animation
+const useCountUp = (end, duration = 2000) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const increment = end / (duration / 16); // 60fps
+    const step = () => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        return;
+      }
+      setCount(Math.floor(start));
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [end, duration]);
+
+  return count;
+};
+
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [search, setSearch] = useState("");
@@ -32,9 +54,14 @@ const Dashboard = () => {
       setLoading(true);
       setError("");
       try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const userId = user.id;
         const response = await fetch("http://127.0.0.1:5000/stats", {
           method: "GET",
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "X-User-ID": userId,
+          },
         });
 
         if (!response.ok) {
@@ -80,7 +107,7 @@ const Dashboard = () => {
         setSelectedRepos(data.filter(repo => repo.is_selected).map(repo => repo.full_name));
         setIsGithubLinked(true);
         toast.success("Dépôts GitHub chargés !", {
-          toastId: "github-repos-loaded", // Unique ID to prevent duplicates
+          toastId: "github-repos-loaded",
           position: "top-right",
           autoClose: 3000,
           theme: "dark",
@@ -252,24 +279,37 @@ const Dashboard = () => {
     }
   };
 
-  // Filter stats
+  // Sort repos to pin selected ones at the top
+  const sortedRepos = [...repos].sort((a, b) => {
+    if (a.is_selected && !b.is_selected) return -1;
+    if (!a.is_selected && b.is_selected) return 1;
+    return a.full_name.localeCompare(b.full_name);
+  });
+
+  // Animated stats
+  // Define animated counts unconditionally
+  const policiesCount = useCountUp(stats ? stats.policies : 0, 1500);
+  const alertsCount = useCountUp(stats ? stats.alerts : 0, 1500);
+  const securityScoreCount = useCountUp(stats ? stats.securityScore : 0, 1500);
+
+  // Filter stats (unchanged)
   const filteredStats = stats
     ? {
-        policies: stats.policies,
-        alerts: stats.alerts,
-        securityScore: stats.securityScore,
+        policies: policiesCount,
+        alerts: alertsCount,
+        securityScore: securityScoreCount,
       }
     : null;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Entête */}
+    <div className="h-full flex flex-col p-6 bg-gray-900 min-h-screen">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-100 mb-4 sm:mb-0 flex items-center gap-2">
-          <ChartBarIcon className="h-8 w-8 text-blue-400" />
+        <h2 className="text-3xl font-semibold text-gray-100 mb-4 sm:mb-0 flex items-center gap-3 transition-all duration-300">
+          <ChartBarIcon className="h-8 w-8 text-blue-400 animate-pulse" />
           Tableau de Bord
         </h2>
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full sm:w-80 transition-all duration-300">
           <label htmlFor="search-input" className="sr-only">
             Rechercher
           </label>
@@ -279,7 +319,7 @@ const Dashboard = () => {
             placeholder="Rechercher..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-800 text-gray-100 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-500 hover:bg-gray-700"
           />
           <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
             <MagnifyingGlassIcon className="h-5 w-5" />
@@ -287,59 +327,59 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Grille des cartes */}
+      {/* Stats Grid */}
       {loading ? (
-        <div className="flex justify-center items-center py-10">
+        <div className="flex justify-center items-center py-12">
           <ArrowPathIcon className="h-10 w-10 text-blue-500 animate-spin" />
-          <span className="ml-3 text-gray-400">Chargement des données...</span>
+          <span className="ml-3 text-gray-400 text-lg">Chargement des données...</span>
         </div>
       ) : error ? (
-        <div className="flex justify-center items-center py-10 text-red-400">
+        <div className="flex justify-center items-center py-12 text-red-400">
           <ExclamationTriangleIcon className="h-6 w-6 mr-2" />
-          <p>{error}</p>
+          <p className="text-lg">{error}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <h3 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2">
               <ShieldCheckIcon className="h-5 w-5 text-blue-400" />
-              Politiques de sécurité
+              Nombre des scans
             </h3>
-            <p className="text-3xl font-bold text-blue-400">{filteredStats.policies}</p>
+            <p className="text-3xl text-blue-400 transition-all duration-300">{filteredStats.policies}</p>
           </div>
-          <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <h3 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2">
               <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
               Alertes de sécurité
             </h3>
-            <p className="text-3xl font-bold text-red-400">{filteredStats.alerts}</p>
+            <p className="text-3xl text-red-400 transition-all duration-300">{filteredStats.alerts}</p>
           </div>
-          <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div className="bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <h3 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2">
               <StarIcon className="h-5 w-5 text-green-400" />
               Score de sécurité
             </h3>
-            <p className="text-3xl font-bold text-green-400">{filteredStats.securityScore}</p>
+            <p className="text-3xl text-green-400 transition-all duration-300">{filteredStats.securityScore}</p>
           </div>
         </div>
       )}
 
       {/* GitHub Repositories Section */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+      <div className="bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
         <button
           className="flex items-center justify-between w-full text-lg font-semibold text-gray-100 mb-4"
           onClick={() => setShowGithubSection(!showGithubSection)}
         >
           <span className="flex items-center gap-2">
-            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="h-5 w-5 text-blue-400 transition-transform duration-300 hover:scale-110" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.29 1.08 2.85.82.09-.64.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.52.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.66.94.66 1.9v2.81c0 .27.16.59.66.5A10 10 0 0 0 22 12 10 10 0 0 0 12 2z" />
             </svg>
             Dépôts GitHub
           </span>
           {showGithubSection ? (
-            <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+            <ChevronUpIcon className="h-5 w-5 text-gray-400 transition-transform duration-200" />
           ) : (
-            <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+            <ChevronDownIcon className="h-5 w-5 text-gray-400 transition-transform duration-200" />
           )}
         </button>
 
@@ -361,43 +401,48 @@ const Dashboard = () => {
                   <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
                   <p>{reposError}</p>
                 </div>
-              ) : repos.length > 0 ? (
+              ) : sortedRepos.length > 0 ? (
                 <div>
-                  <ul className="space-y-2">
-                    {repos.map((repo) => (
-                      <li key={repo.full_name} className="text-gray-300 flex items-center justify-between">
+                  <ul className="space-y-2 max-h-96 overflow-y-auto">
+                    {sortedRepos.map((repo) => (
+                      <li
+                        key={repo.full_name}
+                        className={`flex items-center justify-between p-2 rounded-lg transition-all duration-200 ${
+                          repo.is_selected ? "bg-blue-900/50" : "hover:bg-gray-700/50"
+                        }`}
+                      >
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             checked={repo.is_selected}
                             onChange={() => toggleRepoSelection(repo.full_name)}
-                            className="h-4 w-4 text-blue-500"
+                            className="h-4 w-4 text-blue-500 rounded focus:ring-blue-500"
                           />
                           <a
                             href={repo.html_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:text-blue-400 transition-colors"
+                            className="text-gray-300 hover:text-blue-400 transition-colors duration-200"
                           >
                             {repo.full_name}
                           </a>
                         </div>
                         {repo.description && (
-                          <p className="text-sm text-gray-400">{repo.description}</p>
+                          <p className="text-sm text-gray-400 max-w-xs truncate">{repo.description}</p>
                         )}
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex gap-3">
                     <button
                       onClick={handleSaveRepos}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105"
                     >
                       Enregistrer la sélection
                     </button>
                     <Link
                       to="/configs"
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105"
                     >
                       Voir les configurations
                     </Link>
@@ -424,7 +469,7 @@ const Dashboard = () => {
                             setReposLoading(false);
                           });
                       }}
-                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-all duration-200 transform hover:scale-105"
                     >
                       Rafraîchir
                     </button>
@@ -438,7 +483,7 @@ const Dashboard = () => {
                 <p className="text-gray-400 mb-4">Connectez votre compte GitHub pour voir vos dépôts.</p>
                 <button
                   onClick={handleConnectGithub}
-                  className="bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center justify-center mx-auto hover:bg-gray-700 transition-colors"
+                  className="bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center justify-center mx-auto hover:bg-gray-700 transition-all duration-200 transform hover:scale-105"
                 >
                   <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.29 1.08 2.85.82.09-.64.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.52.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.66.94.66 1.9v2.81c0 .27.16.59.66.5A10 10 0 0 0 22 12 10 10 0 0 0 12 2z" />
@@ -454,17 +499,17 @@ const Dashboard = () => {
                 <h4 className="text-md font-semibold text-gray-100 mb-2">
                   Ou utilisez un jeton d'accès personnel (PAT)
                 </h4>
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     value={pat}
                     onChange={(e) => setPat(e.target.value)}
                     placeholder="Entrez votre jeton GitHub"
-                    className="flex-1 p-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
+                    className="flex-1 p-2.5 bg-gray-800 text-gray-100 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-500 hover:bg-gray-700"
                   />
                   <button
                     onClick={handlePatPreview}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105"
                   >
                     Aperçu
                   </button>
@@ -472,14 +517,17 @@ const Dashboard = () => {
                 {availableRepos.length > 0 && (
                   <div className="mt-4">
                     <h5 className="text-sm font-semibold text-gray-100 mb-2">Sélectionnez les dépôts :</h5>
-                    <ul className="max-h-40 overflow-y-auto border border-gray-600 rounded-lg p-2">
+                    <ul className="max-h-40 overflow-y-auto border border-gray-700 rounded-lg p-2">
                       {availableRepos.map((repo) => (
-                        <li key={repo.full_name} className="flex items-center gap-2 text-gray-300">
+                        <li
+                          key={repo.full_name}
+                          className="flex items-center gap-2 text-gray-300 p-1 hover:bg-gray-700/50 rounded transition-all duration-200"
+                        >
                           <input
                             type="checkbox"
                             checked={selectedRepos.includes(repo.full_name)}
                             onChange={() => toggleRepoSelection(repo.full_name)}
-                            className="h-4 w-4 text-blue-500"
+                            className="h-4 w-4 text-blue-500 rounded focus:ring-blue-500"
                           />
                           <span>{repo.full_name}</span>
                         </li>
@@ -487,7 +535,7 @@ const Dashboard = () => {
                     </ul>
                     <button
                       onClick={handlePatSubmit}
-                      className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105"
                     >
                       Ajouter les dépôts sélectionnés
                     </button>
