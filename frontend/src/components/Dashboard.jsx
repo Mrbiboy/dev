@@ -124,10 +124,6 @@ const Dashboard = () => {
     fetchGithubRepos();
   }, []);
 
-  // Handle GitHub OAuth connection
-  const handleConnectGithub = () => {
-    window.location.href = "http://127.0.0.1:5000/auth/github";
-  };
 
   // Handle PAT submission
   const handlePatSubmit = async () => {
@@ -479,25 +475,8 @@ const Dashboard = () => {
                 <p className="text-gray-400">Aucun dépôt trouvé.</p>
               )
             ) : (
-              <div className="text-center">
-                <p className="text-gray-400 mb-4">Connectez votre compte GitHub pour voir vos dépôts.</p>
-                <button
-                  onClick={handleConnectGithub}
-                  className="bg-gray-900 text-white px-4 py-2 rounded-lg flex items-center justify-center mx-auto hover:bg-gray-700 transition-all duration-200 transform hover:scale-105"
-                >
-                  <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.29 1.08 2.85.82.09-.64.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.52.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.66.94.66 1.9v2.81c0 .27.16.59.66.5A10 10 0 0 0 22 12 10 10 0 0 0 12 2z" />
-                  </svg>
-                  Connecter à GitHub
-                </button>
-              </div>
-            )}
-
-            {/* PAT Input Section */}
-            {!isGithubLinked && (
               <div className="mt-6 border-t border-gray-700 pt-4">
-                <h4 className="text-md font-semibold text-gray-100 mb-2">
-                  Ou utilisez un jeton d'accès personnel (PAT)
+                <h4 className="text-md font-semibold text-gray-100 mb-2">utilisez un jeton d'accès personnel (PAT)
                 </h4>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input

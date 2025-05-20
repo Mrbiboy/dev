@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import ResultDisplay from "./ResultDisplay"; // Import ResultDisplay
+import ResultDisplay from "./ResultDisplay";
 import { XCircleIcon } from "@heroicons/react/24/outline";
 
-const HistoryModal = ({ isOpen, onClose, userId }) => {
+const HistoryModal = ({ isOpen, onClose, userId, scanType }) => {
   const [history, setHistory] = useState([]);
-  const [selectedScan, setSelectedScan] = useState(null); // State for selected scan
+  const [selectedScan, setSelectedScan] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch scan history when modal opens
@@ -15,7 +15,12 @@ const HistoryModal = ({ isOpen, onClose, userId }) => {
     const fetchHistory = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://127.0.0.1:5000/history", {
+        // Include scan_type in the request if provided
+        let scan_type = scanType === "vulnerability" ? "semgrep" : "checkov" ;
+        const url = scanType
+          ? `http://127.0.0.1:5000/history?scan_type=${scan_type}`
+          : "http://127.0.0.1:5000/history";
+        const response = await fetch(url, {
           headers: {
             "X-User-ID": userId,
           },
@@ -42,7 +47,7 @@ const HistoryModal = ({ isOpen, onClose, userId }) => {
     };
 
     fetchHistory();
-  }, [isOpen, userId]);
+  }, [isOpen, userId, scanType]);
 
   // Format date to a readable format
   const formatDate = (isoString) => {
@@ -59,8 +64,10 @@ const HistoryModal = ({ isOpen, onClose, userId }) => {
   // Handle card click to show scan details
   const handleCardClick = (scan) => {
     scan.ItemName = scan.repo_url
-                    ? scan.repo_url.split("/").slice(-2).join("/")
-                    : (scan.item_name ? scan.item_name : "Fichier ")
+      ? scan.repo_url.split("/").slice(-2).join("/")
+      : scan.item_name
+      ? scan.item_name
+      : "Fichier";
     setSelectedScan(scan);
   };
 
@@ -75,7 +82,9 @@ const HistoryModal = ({ isOpen, onClose, userId }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-800 rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-100">Historique des scans</h2>
+          <h2 className="text-2xl font-bold text-gray-100">
+            Historique des scans
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-100">
             <XCircleIcon className="h-6 w-6" />
           </button>
@@ -91,12 +100,16 @@ const HistoryModal = ({ isOpen, onClose, userId }) => {
               <div
                 key={scan.id}
                 onClick={() => handleCardClick(scan)}
-                className="bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200"
+                className={`bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200 ${
+                  scan.scan_type === "checkov" ? "border-l-4 border-blue-500" : "border-l-4 border-green-500"
+                }`}
               >
                 <h3 className="text-lg font-semibold text-gray-100">
                   {scan.repo_url
                     ? scan.repo_url.split("/").slice(-2).join("/")
-                    : (scan.item_name ? scan.item_name : "Fichier ")}
+                    : scan.item_name
+                    ? scan.item_name
+                    : "Fichier"}
                 </h3>
                 <p className="text-gray-300">Status: {scan.status}</p>
                 <p className="text-gray-300">Score: {scan.score}%</p>
@@ -115,7 +128,7 @@ const HistoryModal = ({ isOpen, onClose, userId }) => {
             >
               Retour à l'historique
             </button>
-            <ResultDisplay result={selectedScan.scan_result.results}  item_name= {selectedScan.ItemName}  />
+            <ResultDisplay result={selectedScan.scan_result.results} item_name={selectedScan.ItemName} />
           </div>
         )}
       </div>

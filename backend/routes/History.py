@@ -4,24 +4,35 @@ from utils.db import get_db_connection
 
 history_bp = Blueprint('history', __name__)
 
+
 @history_bp.route("/history", methods=["GET"])
 def get_scan_history():
     user_id = request.headers.get("X-User-ID")
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
+    scan_type = request.args.get("scan_type")  # Get scan_type from query params
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            """     
-            SELECT id, repo_id, scan_result, repo_url, status, score, compliant, created_at, input_type
+
+        # Base query
+        query = """
+            SELECT id, repo_id, scan_result, repo_url, status, score, compliant, created_at, input_type, scan_type
             FROM scan_history
             WHERE user_id = %s
-            ORDER BY created_at DESC
-            """,
-            (user_id,)
-        )
+        """
+        params = [user_id]
+
+        # Add scan_type filter if provided
+        if scan_type:
+            query += " AND scan_type = %s"
+            params.append(scan_type)
+
+        query += " ORDER BY created_at DESC"
+
+        cursor.execute(query, params)
         rows = cursor.fetchall()
         history = []
 
@@ -52,7 +63,9 @@ def get_scan_history():
                 "status": row[4],
                 "score": row[5],
                 "compliant": row[6],
-                "created_at": row[7].isoformat()
+                "created_at": row[7].isoformat(),
+                "input_type": row[8],
+                "scan_type": row[9]
             }
             history.append(element)
 

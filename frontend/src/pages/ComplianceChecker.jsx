@@ -129,17 +129,15 @@ const ComplianceChecker = () => {
             <div className="flex justify-between space-x-4">
               <button
                 onClick={resetChecker}
-                className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-200 flex items-center gap-2 shadow-md"
+                className="bg-gray-600 text-white px-6 py-3 mt-4 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-200 flex items-center gap-2 shadow-md"
               >
-                <CheckCircleIcon className="h-5 w-5" />
                 Retour
               </button>
               <button
                 onClick={() => setResult(null)}
-                className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-200 flex items-center gap-2 shadow-md"
+                className="bg-gray-600 text-white px-6 py-3 mt-4 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-200 flex items-center gap-2 shadow-md"
                 style={{ display: result ? "flex" : "none" }}
               >
-                <CheckCircleIcon className="h-5 w-5" />
                 Effacer le résultat
               </button>
             </div>
