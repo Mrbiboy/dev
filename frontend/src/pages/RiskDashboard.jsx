@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import { toast } from "react-toastify";
 import { ChartBarIcon, ArrowPathIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 
-// 📊 Enregistrement des composants de Chart.js
+// Ensure Chart.js is properly imported
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
+
+// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const RiskDashboard = () => {
   const [risks, setRisks] = useState([]);
+  const [details, setDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -17,22 +28,31 @@ const RiskDashboard = () => {
     setLoading(true);
     setError("");
     try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = user.id;
+      if (!userId) throw new Error("Utilisateur non connecté");
+
       const response = await fetch("http://127.0.0.1:5000/risks", {
         method: "GET",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: {
+          "X-User-ID": userId,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
 
       const data = await response.json();
       console.log("📊 Données reçues :", data);
 
-      if (!Array.isArray(data)) {
+      if (!response.ok) throw new Error(data.error || "Erreur serveur");
+      if (!data.risks || !Array.isArray(data.risks)) {
         throw new Error("Format inattendu des données");
       }
 
-      setRisks(data);
+      setRisks(data.risks);
+      setDetails(data.details || []);
     } catch (error) {
       console.error("❌ Erreur lors de la récupération des risques :", error);
-      setError("Impossible de récupérer les risques");
+      setError("Impossible de récupérer les risques : " + error.message);
       toast.error("Erreur lors du chargement des risques !", {
         position: "top-right",
         autoClose: 3000,
@@ -53,15 +73,29 @@ const RiskDashboard = () => {
     fetchRisks();
   };
 
-  // 🎨 Configuration du graphique avec thème sombre
+  // Debug chart data
+  console.log("📈 Risks pour le graphique :", risks);
+
   const chartData = {
-    labels: risks.map((risk) => risk.name),
+    labels: risks.map((risk) => risk.name) || ["Aucun risque"],
     datasets: [
       {
-        label: "Niveau de Risque (%)",
-        data: risks.map((risk) => risk.level),
-        backgroundColor: "rgba(239, 68, 68, 0.5)", // 🔴 Rouge clair pour les barres
-        borderColor: "rgba(239, 68, 68, 1)", // 🔴 Rouge vif pour les bordures
+        label: "Niveau de Risque",
+        data: risks.map((risk) => risk.level) || [0],
+        backgroundColor: risks.length
+          ? [
+              "rgba(239, 68, 68, 0.5)", // Red for Critical
+              "rgba(246, 173, 85, 0.5)", // Orange for High
+              "rgba(74, 222, 128, 0.5)", // Green for Low
+            ]
+          : ["rgba(100, 100, 100, 0.5)"], // Gray for no data
+        borderColor: risks.length
+          ? [
+              "rgba(239, 68, 68, 1)",
+              "rgba(246, 173, 85, 1)",
+              "rgba(74, 222, 128, 1)",
+            ]
+          : ["rgba(100, 100, 100, 1)"],
         borderWidth: 1,
       },
     ],
@@ -69,37 +103,44 @@ const RiskDashboard = () => {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       title: {
         display: true,
-        text: "Niveau de Risque par Catégorie",
-        color: "#f3f4f6", // Texte blanc cassé
+        text: "Risques par Niveau de Sévérité",
+        color: "#f3f4f6",
         font: { size: 16 },
       },
       tooltip: {
-        backgroundColor: "#1f2937", // Fond sombre pour les tooltips
+        backgroundColor: "#1f2937",
         titleColor: "#f3f4f6",
         bodyColor: "#f3f4f6",
       },
     },
     scales: {
       x: {
-        ticks: { color: "#9ca3af" }, // Texte gris clair pour les labels X
-        grid: { color: "#374151" }, // Grille gris foncé
+        ticks: { color: "#9ca3af" },
+        grid: { color: "#374151" },
       },
       y: {
-        ticks: { color: "#9ca3af" }, // Texte gris clair pour les labels Y
-        grid: { color: "#374151" }, // Grille gris foncé
+        ticks: { color: "#9ca3af" },
+        grid: { color: "#374151" },
         beginAtZero: true,
+        title: {
+          display: true,
+          text: "Score de Risque",
+          color: "#f3f4f6",
+        },
+        suggestedMax: Math.max(...risks.map((r) => r.level), 10) + 10,
       },
     },
   };
 
   return (
-    <div className="h-full items-center justify-center flex flex-col">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-4xl">
-        <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen items-center justify-center flex flex-col p-4">
+      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-6xl">
+        <div className="flex justify-between items-center mb-6 ">
           <h2 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
             <ChartBarIcon className="h-7 w-7 text-blue-400" />
             Dashboard de Risques
@@ -108,7 +149,7 @@ const RiskDashboard = () => {
             onClick={handleRefresh}
             disabled={loading || isRefreshing}
             className={`bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 ${
-              (loading || isRefreshing) ? "opacity-50 cursor-not-allowed" : ""
+              loading || isRefreshing ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {isRefreshing ? (
@@ -137,23 +178,86 @@ const RiskDashboard = () => {
           </div>
         ) : (
           <>
-            <div className="bg-gray-700 p-4 rounded-lg mb-6">
+            <div className="bg-gray-700 p-4 rounded-lg mb-6 h-96">
               <label htmlFor="risk-chart" className="text-gray-400 text-sm mb-2 block">
                 Graphique des risques :
               </label>
-              <Bar id="risk-chart" data={chartData} options={chartOptions} />
+              <div className="h-80">
+                <Bar id="risk-chart" data={chartData} options={chartOptions} />
+              </div>
             </div>
-            <ul className="space-y-3">
-              {risks.map((risk, index) => (
-                <li
-                  key={index}
-                  className="bg-gray-700 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-200"
-                >
-                  <strong className="text-gray-100">{risk.name}</strong>:{" "}
-                  <span className="text-red-400">{risk.level}%</span>
-                </li>
-              ))}
-            </ul>
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-100 mb-4">Détails des Vulnérabilités</h3>
+              {details.length === 0 ? (
+                <p className="text-gray-400">Aucune vulnérabilité trouvée.</p>
+              ) : (
+                <>
+                  {/* Table for larger screens */}
+                  <div className="hidden md:block overflow-x-auto max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 ">
+                    <table className="w-full text-left text-gray-300">
+                      <thead className="sticky top-0 bg-gray-700">
+                        <tr className="border-b border-gray-600">
+                          <th className="py-3 px-4 text-sm font-medium">Sévérité</th>
+                          <th className="py-3 px-4 text-sm font-medium">Problème</th>
+                          <th className="py-3 px-4 text-sm font-medium">Suggestion</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {details.map((detail, index) => (
+                          <tr
+                            key={index}
+                            className="border-b border-gray-600 hover:bg-gray-600 transition-colors"
+                          >
+                            <td
+                              className={`py-3 px-4 text-sm ${
+                                detail.severity === "ERROR"
+                                  ? "text-red-400"
+                                  : detail.severity === "WARNING"
+                                  ? "text-yellow-400"
+                                  : "text-green-400"
+                              }`}
+                            >
+                              {detail.severity}
+                            </td>
+                            <td className="py-3 px-4 text-sm">{detail.message}</td>
+                            <td className="py-3 px-4 text-sm">{detail.suggestion}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Card layout for smaller screens */}
+                  <div className="md:hidden space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                    {details.map((detail, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-800 p-4 rounded-lg shadow-md hover:bg-gray-600 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className={`text-sm font-semibold ${
+                              detail.severity === "ERROR"
+                                ? "text-red-400"
+                                : detail.severity === "WARNING"
+                                ? "text-yellow-400"
+                                : "text-green-400"
+                            }`}
+                          >
+                            {detail.severity}
+                          </span>
+                        </div>
+                        <p className="text-gray-300 text-sm">
+                          <span className="font-medium">Problème :</span> {detail.message}
+                        </p>
+                        <p className="text-gray-300 text-sm mt-2">
+                          <span className="font-medium">Suggestion :</span> {detail.suggestion}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </>
         )}
       </div>

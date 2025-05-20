@@ -399,8 +399,8 @@ def save_scan_history(user_id, result, input_type, repo_url=None, files_to_save=
         # Insert scan history
         cursor.execute(
             """
-            INSERT INTO scan_history (user_id, repo_id, scan_result, repo_url, status, score, compliant, input_type)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO scan_history (user_id, repo_id, scan_result, repo_url, status, score, compliant, input_type,scan_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
@@ -411,7 +411,8 @@ def save_scan_history(user_id, result, input_type, repo_url=None, files_to_save=
                 result.get("results", {}).get("status", "unknown"),
                 result.get("results", {}).get("score"),
                 result.get("results", {}).get("compliant"),
-                input_type
+                input_type,
+                "checkov"
             )
         )
 

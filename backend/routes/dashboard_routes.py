@@ -71,15 +71,3 @@ def get_stats():
     finally:
         cursor.close()
         conn.close()
-
-@dashboard_bp.route("/risks", methods=["GET"])
-@jwt_required()
-def get_risks():
-    risks = [
-        {"name": "Injection SQL", "level": 85},
-        {"name": "Cross-Site Scripting (XSS)", "level": 70},
-        {"name": "Fuite de données sensibles", "level": 90},
-        {"name": "Attaque Man-in-the-Middle (MITM)", "level": 60},
-        {"name": "Exploitation de vulnérabilités Zero-Day", "level": 95},
-    ]
-    return jsonify(risks), 200
