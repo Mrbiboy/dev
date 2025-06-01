@@ -137,7 +137,7 @@ def validate():
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
 
-    SEMGREP_ENDPOINT = "http://3.84.27.167:5000/scan"
+    SEMGREP_ENDPOINT = "http://" +os.getenv("MACHINE_IP")+":5000/scan"
 
     if input_type == "file":
         content = request.form.get("content")

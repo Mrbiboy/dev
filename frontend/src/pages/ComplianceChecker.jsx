@@ -11,9 +11,9 @@ import ResultDisplay from "../components/ComplianceChecker/ResultDisplay";
 import HistoryModal from "../components/ComplianceChecker/HistoryModal";
 
 const ComplianceChecker = () => {
-  const [sourceType, setSourceType] = useState(null);
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sourceType, setSourceType] = useState(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const location = useLocation();
   const selectedFiles = location.state?.selectedFiles || [];
@@ -144,7 +144,7 @@ const ComplianceChecker = () => {
           </div>
         )}
         <ToastContainer position="top-right" autoClose={3000} theme="dark" />
-        <HistoryModal isOpen={isHistoryOpen} onClose={closeHistory} userId={userId} />
+        <HistoryModal isOpen={isHistoryOpen} onClose={closeHistory} userId={userId} scanType="compliance"  />
       </div>
     </div>
   );
