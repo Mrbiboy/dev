@@ -147,6 +147,7 @@ def get_github_repos():
         headers = {"Authorization": f"Bearer {access_token}"}
         response = requests.get("https://api.github.com/user/repos", headers=headers)
         if response.status_code != 200:
+            print(f"❌ GitHub API Error: Status {response.status_code}, Response: {response.text}")
             return jsonify({"error": "Échec récupération dépôts"}), 400
 
         repos = response.json()

@@ -56,7 +56,7 @@ const RiskDashboard = () => {
       toast.error("Erreur lors du chargement des risques !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ const RiskDashboard = () => {
       title: {
         display: true,
         text: "Risques par Niveau de Sévérité",
-        color: "#f3f4f6",
+        color: "#333a4c",
         font: { size: 16 },
       },
       tooltip: {
@@ -120,17 +120,17 @@ const RiskDashboard = () => {
     },
     scales: {
       x: {
-        ticks: { color: "#9ca3af" },
-        grid: { color: "#374151" },
+        ticks: { color: "#2b2b2b" },
+        grid: { color: "#6c6a6a" },
       },
       y: {
-        ticks: { color: "#9ca3af" },
-        grid: { color: "#374151" },
+        ticks: { color: "#2b2b2b" },
+        grid: { color: "#6c6a6a" },
         beginAtZero: true,
         title: {
           display: true,
           text: "Score de Risque",
-          color: "#f3f4f6",
+          color: "#333a4c",
         },
         suggestedMax: Math.max(...risks.map((r) => r.level), 10) + 10,
       },
@@ -139,9 +139,9 @@ const RiskDashboard = () => {
 
   return (
     <div className="min-h-screen items-center justify-center flex flex-col p-4">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-6xl">
+      <div className="bg-white  p-8 rounded-lg shadow-lg w-full max-w-6xl">
         <div className="flex justify-between items-center mb-6 ">
-          <h2 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-500 flex items-center gap-2">
             <ChartBarIcon className="h-7 w-7 text-blue-400" />
             Dashboard de Risques
           </h2>
@@ -178,26 +178,26 @@ const RiskDashboard = () => {
           </div>
         ) : (
           <>
-            <div className="bg-gray-700 p-4 rounded-lg mb-6 h-96">
-              <label htmlFor="risk-chart" className="text-gray-400 text-sm mb-2 block">
+            <div className="bg-gray-300 p-4 rounded-lg mb-6 h-96">
+              <label htmlFor="risk-chart" className="text-gray-500 text-sm mb-2 block">
                 Graphique des risques :
               </label>
               <div className="h-80">
                 <Bar id="risk-chart" data={chartData} options={chartOptions} />
               </div>
             </div>
-            <div className="bg-gray-700 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-100 mb-4">Détails des Vulnérabilités</h3>
+            <div className="bg-gray-300 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-500 mb-4">Détails des Vulnérabilités</h3>
               {details.length === 0 ? (
                 <p className="text-gray-400">Aucune vulnérabilité trouvée.</p>
               ) : (
                 <>
                   {/* Table for larger screens */}
                   <div className="hidden md:block overflow-x-auto max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 ">
-                    <table className="w-full text-left text-gray-300">
-                      <thead className="sticky top-0 bg-gray-700">
-                        <tr className="border-b border-gray-600">
-                          <th className="py-3 px-4 text-sm font-medium">Sévérité</th>
+                    <table className="w-full text-left text-gray-900">
+                      <thead className="sticky top-0 bg-gray-600">
+                        <tr className="border-b border-gray-600 text-slate-200">
+                          <th className="py-3 px-4 text-sm font-medium ">Sévérité</th>
                           <th className="py-3 px-4 text-sm font-medium">Problème</th>
                           <th className="py-3 px-4 text-sm font-medium">Suggestion</th>
                         </tr>
@@ -206,7 +206,7 @@ const RiskDashboard = () => {
                         {details.map((detail, index) => (
                           <tr
                             key={index}
-                            className="border-b border-gray-600 hover:bg-gray-600 transition-colors"
+                            className="border-b border-gray-400 hover:bg-gray-500 hover:text-white transition-colors"
                           >
                             <td
                               className={`py-3 px-4 text-sm ${

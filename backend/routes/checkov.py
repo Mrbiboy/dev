@@ -79,16 +79,16 @@ def get_checkov_path():
 
 def get_gemini_suggestion(check, max_retries=3, retry_delay=5):
     prompt = (
-        f"I have detected an issue in an Infrastructure-as-Code file using Checkov. "
-        f"Here are the details:\n"
-        f"- Check ID: {check['check_id']}\n"
-        f"- Check Name: {check['check_name']}\n"
-        f"- File Path: {check['file_path']}\n"
-        f"- Line Range: {check['file_line_range']}\n"
-        f"- Resource: {check['resource']}\n"
-        f"- Severity: {check['severity'] or 'Unknown'}\n"
-        f"Please provide a concise suggestion for improving this issue. "
-        f"Do not suggest automatic fixes, only recommend manual improvements."
+        f"J'ai détecté un problème dans un fichier d'Infrastructure-as-Code en utilisant Checkov. "
+        f"Voici les détails :\n"
+        f"- ID du contrôle : {check['check_id']}\n"
+        f"- Nom du contrôle : {check['check_name']}\n"
+        f"- Chemin du fichier : {check['file_path']}\n"
+        f"- Plage de lignes : {check['file_line_range']}\n"
+        f"- Ressource : {check['resource']}\n"
+        f"- Sévérité : {check['severity'] or 'Inconnue'}\n"
+        f"Veuillez fournir une suggestion concise pour améliorer ce problème. "
+        f"Ne proposez pas de correctifs automatiques, seulement des améliorations manuelles."
     )
 
     for attempt in range(max_retries):

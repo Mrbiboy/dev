@@ -33,14 +33,14 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading, us
           toastId: "selectionned-repos-loaded",
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
       } catch (err) {
         setReposError("Impossible de charger les dépôts GitHub");
         toast.error(err.message, {
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
       } finally {
         setReposLoading(false);
@@ -55,7 +55,7 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading, us
       toast.warn("Veuillez sélectionner un dépôt !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
       return;
     }
@@ -83,13 +83,13 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading, us
       toast.success("Vérification terminée !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } catch (error) {
       toast.error(error.message || "Erreur lors de la vérification !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } finally {
       setIsLoading(false);
@@ -97,9 +97,8 @@ const SelectedReposComplianceChecker = ({ setResult, isLoading, setIsLoading, us
   };
 
   return (
-    <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-2xl">
-      <h2 className="text-2xl font-bold text-gray-100 mb-6 flex items-center gap-2">
-        <CheckCircleIcon className="h-7 w-7 text-green-400" />
+    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
         Validation et Conformité - Dépôts Sélectionnés
       </h2>
       {reposLoading ? (

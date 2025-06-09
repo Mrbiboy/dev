@@ -10,7 +10,7 @@ const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading, userId })
       toast.warn("Veuillez entrer une URL de dépôt GitHub valide (ex. https://github.com/user/repo) !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
       return;
     }
@@ -37,13 +37,13 @@ const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading, userId })
       toast.success("Vérification terminée avec succès !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } catch (error) {
       toast.error(error.message || "Erreur lors de la vérification !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } finally {
       setIsLoading(false);
@@ -51,13 +51,13 @@ const GitHubComplianceChecker = ({ setResult, isLoading, setIsLoading, userId })
   };
 
   return (
-    <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-2xl">
-      <h2 className="text-2xl font-bold text-gray-100 mb-6 flex items-center gap-2">
+    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
         <CheckCircleIcon className="h-7 w-7 text-green-400" />
         Validation et Conformité - GitHub (NIST, ISO 27001, GDPR, HIPAA)
       </h2>
       <div className="relative mb-6">
-        <label htmlFor="github-url" className="text-gray-400 text-sm mb-2 block">
+        <label htmlFor="github-url" className="text-gray-500 text-sm mb-2 block">
           URL du dépôt GitHub :
         </label>
         <input

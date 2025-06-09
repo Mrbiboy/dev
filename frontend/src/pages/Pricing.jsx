@@ -5,13 +5,13 @@ const Pricing = () => {
   return (
     <div className="h-full flex items-center justify-center flex-col">
       <div className="w-full max-w-4xl">
-        <h1 className="text-3xl font-bold text-gray-100 mb-8 text-center flex items-center justify-center gap-2">
+        <h1 className="text-3xl font-bold text-white mb-8 text-center flex items-center justify-center gap-2">
           <CurrencyEuroIcon className="h-8 w-8 text-blue-400" />
           Nos Tarifs
         </h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Starter</h3>
+          <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-semibold text-gray-500 mb-4">Starter</h3>
             <p className="text-2xl text-blue-400 mb-2 flex items-center gap-2">
               <CurrencyEuroIcon className="h-6 w-6" />
               19€/mois
@@ -30,8 +30,8 @@ const Pricing = () => {
             </button>
           </div>
 
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-semibold text-gray-100 mb-4">Pro</h3>
+          <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-semibold text-gray-500 mb-4">Pro</h3>
             <p className="text-2xl text-blue-400 mb-2 flex items-center gap-2">
               <CurrencyEuroIcon className="h-6 w-6" />
               49€/mois

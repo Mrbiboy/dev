@@ -30,7 +30,7 @@ const Configs = () => {
           toastId: 'configurations-charged',
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
       } catch (err) {
         setError("Impossible de charger les configurations");
@@ -38,7 +38,7 @@ const Configs = () => {
         toast.error(err.message, {
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
       } finally {
         setLoading(false);
@@ -50,7 +50,7 @@ const Configs = () => {
 
   const copyToClipboard = (content) => {
     navigator.clipboard.writeText(content).then(() => {
-      toast.success("Contenu copié !", { position: "top-right", autoClose: 2000, theme: "dark" });
+      toast.success("Contenu copié !", { position: "top-right", autoClose: 2000, theme: "light" });
     });
   };
 
@@ -75,14 +75,14 @@ const Configs = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <h2 className="text-3xl font-bold text-gray-100 mb-8 flex items-center gap-2">
+      <h2 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-2">
         <DocumentTextIcon className="h-8 w-8 text-blue-400" />
         Configurations des Dépôts
       </h2>
 
       {loading ? (
         <div className="flex justify-center items-center py-10">
-          <ArrowPathIcon className="h-10 w-10 text-blue-500 animate-spin" />
+          <ArrowPathIcon className="h-10 w-10 text-gray-800 animate-spin" />
           <span className="ml-3 text-gray-400">Chargement des configurations...</span>
         </div>
       ) : error ? (
@@ -91,7 +91,7 @@ const Configs = () => {
           <p>{error}</p>
         </div>
       ) : configs.length > 0 ? (
-        <div className="bg-gray-800 p-6 rounded-lg shadow-md w-full max-w-4xl mx-auto">
+        <div className="bg-sky-100 p-6 rounded-lg shadow-md w-full max-w-4xl mx-auto">
           <ul className="space-y-4">
             {configs.map((config) => (
               <li key={config.id} className="border-b border-gray-700 pb-4">
@@ -102,7 +102,7 @@ const Configs = () => {
                         href={config.repo_html_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-100 hover:text-blue-400 transition-colors truncate block"
+                        className="text-gray-800 hover:text-blue-400 transition-colors truncate block"
                       >
                         {config.repo_full_name}
                       </a>
@@ -131,7 +131,7 @@ const Configs = () => {
                     </Link>
                   </div>
                 </div>
-                <pre className="mt-2 p-4 bg-gray-900 text-gray-300 rounded-lg max-h-64 overflow-auto font-mono text-sm">
+                <pre className="mt-2 p-4 bg-slate-600 text-white rounded-lg max-h-64 overflow-auto font-mono text-sm">
                   {config.content}
                 </pre>
               </li>

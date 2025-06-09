@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { DocumentTextIcon, SparklesIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useLocation } from "react-router-dom";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { dracula } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ReactMarkdown from "react-markdown";
 
 const PoliciesGenerator = () => {
   const location = useLocation();
-  const selectedFiles = location.state?.selectedFiles || "";
+  const selectedFiles = location.state?.selectedFiles || [];
   const [dockerfileInput, setDockerfileInput] = useState("");
   const [correctedDockerfile, setCorrectedDockerfile] = useState("");
+  const [instructions, setInstructions] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Populate textarea if files are passed
@@ -38,7 +42,7 @@ const PoliciesGenerator = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${refreshToken}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
 
@@ -56,7 +60,7 @@ const PoliciesGenerator = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization:`Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({ dockerfile: dockerfileInput }),
       });
@@ -68,16 +72,17 @@ const PoliciesGenerator = () => {
 
       const data = await response.json();
       setCorrectedDockerfile(data.correction);
+      setInstructions(data.explanation); // Store explanation
       toast.success("Dockerfile corrigé avec succès !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } catch (error) {
       toast.error(error.message || "Erreur lors de la correction !", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     } finally {
       setIsLoading(false);
@@ -85,26 +90,28 @@ const PoliciesGenerator = () => {
   };
 
   return (
-    <div className="h-full flex items-center justify-center flex-col">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-2xl">
-        <h2 className="text-2xl font-bold text-gray-100 mb-6 flex items-center gap-2">
-          <DocumentTextIcon className="h-7 w-7 text-blue-400" />
-          Correction de Dockerfile
+    <div className="min-h-fit  flex items-center justify-center p-4">
+      <div className="bg-slate-100 p-8 rounded-lg shadow-lg w-8/12">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+          <DocumentTextIcon className="h-7 w-7 text-gray" />
+          Correction des fichiers de Configurations
         </h2>
 
+        {/* Input Section */}
         <div className="mb-6">
-          <label htmlFor="dockerfile-input" className="text-gray-400 text-sm mb-2 block">
-            Entrez votre Dockerfile :
+          <label htmlFor="dockerfile-input" className="text-gray-500 text-sm mb-2 block">
+            Entrez votre Code :
           </label>
           <textarea
             id="dockerfile-input"
             value={dockerfileInput}
             onChange={(e) => setDockerfileInput(e.target.value)}
-            className="w-full h-32 p-4 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all duration-200 font-mono"
+            className="w-full h-64 p-4 bg-slate-600 text-white border border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all duration-200 font-mono"
             placeholder="FROM ubuntu:latest\nRUN apt-get update\n..."
           />
         </div>
 
+        {/* Correct Button */}
         <button
           onClick={correctDockerfile}
           disabled={isLoading || !dockerfileInput.trim()}
@@ -125,18 +132,42 @@ const PoliciesGenerator = () => {
           )}
         </button>
 
-        {correctedDockerfile && (
-          <div className="mt-6">
-            <label htmlFor="dockerfile-output" className="text-gray-400 text-sm mb-2 block">
-              Dockerfile corrigé :
-            </label>
-            <textarea
-              id="dockerfile-output"
-              value={correctedDockerfile}
-              readOnly
-              className="w-full h-64 p-4 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 transition-all duration-200 font-mono whitespace-pre"
-              placeholder="La version corrigée apparaîtra ici..."
-            />
+        {/* Output Section */}
+        {(correctedDockerfile || instructions) && (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Corrected Dockerfile */}
+            {correctedDockerfile && (
+              <div>
+                <label className="text-gray-400 text-sm mb-2 block">
+                  Fichier corrigé :
+                </label>
+                <SyntaxHighlighter
+                  language="docker"
+                  style={dracula}
+                  customStyle={{
+                    background: "#2b384a",
+                    borderRadius: "0.5rem",
+                    padding: "1rem",
+                    maxHeight: "400px",
+                    overflow: "auto",
+                  }}
+                >
+                  {correctedDockerfile}
+                </SyntaxHighlighter>
+              </div>
+            )}
+
+            {/* Explanation */}
+            {instructions && (
+              <div>
+                <label className="text-gray-400 text-sm mb-2 block">
+                  Explication des changements :
+                </label>
+                <div className="bg-gray-700 p-4 rounded-lg text-gray-100 max-h-96 overflow-auto">
+                  <ReactMarkdown>{instructions}</ReactMarkdown>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

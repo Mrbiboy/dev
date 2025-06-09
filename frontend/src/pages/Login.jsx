@@ -38,7 +38,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
           toast.success("Connexion réussie !", {
             position: "top-right",
             autoClose: 3000,
-            theme: "dark",
+            theme: "light",
           });
           navigate("/dashboard", { replace: true });
         } else {
@@ -49,7 +49,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         toast.error("Erreur lors de l'authentification", {
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
         navigate("/login", { replace: true });
       }
@@ -86,7 +86,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         toast.success("Connexion réussie !", {
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
 
         navigate("/dashboard");
@@ -94,14 +94,14 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         toast.error(data.error || "Échec de la connexion", {
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
       }
     } catch (error) {
       toast.error("Erreur de connexion au serveur", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
       setLoading(false);
     }
@@ -117,14 +117,14 @@ const Login = ({ setIsAuthenticated, setUser }) => {
         toast.error("Erreur Google OAuth", {
           position: "top-right",
           autoClose: 3000,
-          theme: "dark",
+          theme: "light",
         });
       }
     } catch (error) {
       toast.error("Erreur de connexion au serveur", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     }
   };
@@ -136,7 +136,7 @@ const Login = ({ setIsAuthenticated, setUser }) => {
       toast.error("Erreur GitHub OAuth", {
         position: "top-right",
         autoClose: 3000,
-        theme: "dark",
+        theme: "light",
       });
     }
   };
@@ -153,11 +153,11 @@ const Login = ({ setIsAuthenticated, setUser }) => {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md z-10">
-        <h2 className="text-2xl font-bold text-center text-gray-100 mb-6">Connexion</h2>
+      <div className="bg-sky-100 p-6 rounded-lg shadow-lg w-full max-w-md z-10">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Connexion</h2>
         <form onSubmit={handleLogin}>
           <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-300 mb-1">
+            <label htmlFor="email" className="block text-gray-800 mb-1">
               Email
             </label>
             <input
@@ -165,14 +165,14 @@ const Login = ({ setIsAuthenticated, setUser }) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
+              className="w-full p-2 bg-sky-100 text-gray-800 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
               placeholder="Entrez votre email"
               required
             />
           </div>
 
           <div className="mb-6 relative">
-            <label htmlFor="password" className="block text-gray-300 mb-1">
+            <label htmlFor="password" className="block text-gray-800 mb-1">
               Mot de passe
             </label>
             <input
@@ -180,14 +180,14 @@ const Login = ({ setIsAuthenticated, setUser }) => {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 pr-10 bg-gray-700 text-gray-100 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
+              className="w-full p-2 pr-10 bg-sky-100 text-gray-800 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 placeholder-gray-400"
               placeholder="Entrez votre mot de passe"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-9 text-gray-400 hover:text-white"
+              className="absolute right-2 top-9 text-gray-400 hover:text-gray-700"
               tabIndex={-1}
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
